@@ -47,6 +47,6 @@ coverage/
 target/criterion/
 
 # Documentation build
-docs/.vitepress/dist/
+docs/dist/
 docs/.vitepress/cache/
 
