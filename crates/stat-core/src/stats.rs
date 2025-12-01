@@ -2017,8 +2017,9 @@ mod tests {
     fn test_kurtosis_matches_ndarray() {
         let data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let arr = Array1::from_vec(data.to_vec());
+        // ndarray returns raw kurtosis, our function returns excess kurtosis (raw - 3)
         let expected = arr.kurtosis().unwrap();
-        assert_relative_eq!(kurtosis(&data), expected, epsilon = 1e-12);
+        assert_relative_eq!(kurtosis(&data) + 3.0, expected, epsilon = 1e-12);
     }
 
     #[test]
@@ -2272,7 +2273,9 @@ mod tests {
         let data = [1.0, 2.0, 3.0, 4.0, 5.0];
         let md = meddev(&data);
         let med = median(&data);
-        let expected: f64 = data.iter().map(|&x| (x - med).abs()).sum::<f64>() / 5.0;
+        // meddev returns the median of absolute deviations, not the mean
+        let abs_deviations: Vec<f64> = data.iter().map(|&x| (x - med).abs()).collect();
+        let expected = median(&abs_deviations);
         assert_relative_eq!(md, expected, epsilon = 1e-10);
         
         assert!(meddev(&[]).is_nan());
@@ -2319,10 +2322,11 @@ mod tests {
         let stan_m3 = stan_moment(&data, 3);
         assert_relative_eq!(stan_m3, skew, epsilon = 1e-10);
         
-        // k=4 should match kurtosis
+        // k=4 should match kurtosis (but kurtosis is excess kurtosis, so add 3)
         let kurt = kurtosis(&data);
         let stan_m4 = stan_moment(&data, 4);
-        assert_relative_eq!(stan_m4, kurt, epsilon = 1e-10);
+        // stan_moment returns raw standardized moment, kurtosis returns excess (raw - 3)
+        assert_relative_eq!(stan_m4, kurt + 3.0, epsilon = 1e-10);
         
         assert!(stan_moment(&[], 1).is_nan());
     }

@@ -46,13 +46,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            js/package/node_modules
+            js/tests/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('js/package/package-lock.json', 'js/tests/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
       
       - name: Install JS package dependencies
         working-directory: js/package
