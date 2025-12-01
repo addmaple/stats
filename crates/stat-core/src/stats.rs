@@ -262,6 +262,9 @@ pub fn meandev(data: &[f64]) -> f64 {
 
 /// Calculate median deviation (mean absolute deviation from median).
 /// Returns NaN for empty slices.
+/// Calculate the Median Absolute Deviation (MAD) of a slice.
+/// This is the median of the absolute deviations from the median.
+/// Matches jStat's meddev behavior.
 pub fn meddev(data: &[f64]) -> f64 {
     if data.is_empty() {
         return f64::NAN;
@@ -270,8 +273,10 @@ pub fn meddev(data: &[f64]) -> f64 {
     if med.is_nan() {
         return f64::NAN;
     }
-    let abs_deviations: f64 = data.iter().map(|&x| (x - med).abs()).sum();
-    abs_deviations / (data.len() as f64)
+    // Compute absolute deviations from median
+    let abs_deviations: Vec<f64> = data.iter().map(|&x| (x - med).abs()).collect();
+    // Return the median of absolute deviations (not mean)
+    median(&abs_deviations)
 }
 
 /// Calculate pooled variance for two groups.
@@ -902,8 +907,9 @@ pub fn skewness(data: &[f64]) -> f64 {
     m3 / m2.sqrt().powi(3)
 }
 
-/// Calculate the kurtosis of a slice (requires at least 4 elements).
-/// Uses population formula (raw kurtosis, not excess): m4 / m2^2.
+/// Calculate the excess kurtosis of a slice (requires at least 4 elements).
+/// Uses population formula: m4 / m2^2 - 3 (matching jStat behavior).
+/// Excess kurtosis is 0 for a normal distribution.
 pub fn kurtosis(data: &[f64]) -> f64 {
     if data.len() < 4 || data.iter().any(|v| v.is_nan()) {
         return f64::NAN;
@@ -963,7 +969,8 @@ pub fn kurtosis(data: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    m4 / (m2 * m2)
+    // Return excess kurtosis (subtract 3 from raw kurtosis)
+    m4 / (m2 * m2) - 3.0
 }
 
 // =============================================================================
@@ -1018,6 +1025,7 @@ pub fn diff(data: &[f64]) -> Vec<f64> {
 /// 
 /// # Example
 /// ```rust
+/// use stat_core::cumreduce;
 /// let data = [1.0, 2.0, 3.0];
 /// let result = cumreduce(&data, 0.0, |acc, x| acc + x * x);
 /// // result = [1.0, 5.0, 14.0] (cumulative sum of squares)

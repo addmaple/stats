@@ -47,9 +47,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: |
-            js/package/package-lock.json
-            js/tests/package-lock.json
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
