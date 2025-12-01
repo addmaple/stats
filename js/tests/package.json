@@ -1,0 +1,22 @@
+{
+  "name": "@stats/tests",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "test:jstat": "node --test test/jstat/**/*.test.js",
+    "test:watch": "node --test --watch test/**/*.test.js",
+    "convert-tests": "node scripts/convert-all-tests.js"
+  },
+  "dependencies": {
+    "@stats/core": "file:../package",
+    "jstat": "^1.9.5"
+  },
+  "peerDependencies": {
+    "@stats/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
+
