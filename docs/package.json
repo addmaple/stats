@@ -14,7 +14,10 @@
   "devDependencies": {
     "typedoc": "^0.25.0",
     "typedoc-plugin-markdown": "^3.17.0",
+    "vite-plugin-wasm": "^3.5.0",
     "vitepress": "^1.0.0"
+  },
+  "dependencies": {
+    "@addmaple/stats": "^0.1.1"
   }
 }
-

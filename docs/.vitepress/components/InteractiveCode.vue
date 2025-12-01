@@ -74,8 +74,8 @@ let statsModule = null;
 
 onMounted(async () => {
   try {
-    // Import from the installed package
-    const module = await import('@stats/core');
+    // Import from the published npm package
+    const module = await import('@addmaple/stats');
     
     // Initialize the library
     await module.init();
@@ -83,7 +83,7 @@ onMounted(async () => {
     isInitialized.value = true;
   } catch (err) {
     console.error('Failed to initialize library:', err);
-    error.value = `Failed to initialize library: ${err.message}. Note: The library needs to be built first (cd js/package && npm run build).`;
+    error.value = `Failed to initialize library: ${err.message}`;
   }
 });
 
@@ -102,7 +102,8 @@ const runCode = async () => {
     let transformedCode = code.value;
     
     // Remove import statements and extract function names
-    const importRegex = /import\s*\{([^}]+)\}\s*from\s*['"]@stats\/core['"];?/g;
+    // Support both @stats/core and @addmaple/stats
+    const importRegex = /import\s*\{([^}]+)\}\s*from\s*['"]@(?:stats\/core|addmaple\/stats)['"];?/g;
     const imports = [];
     let match;
     
@@ -116,7 +117,7 @@ const runCode = async () => {
     
     // Remove import and init lines
     transformedCode = transformedCode
-      .replace(/import\s*\{[^}]+\}\s*from\s*['"]@stats\/core['"];?\s*/g, '')
+      .replace(/import\s*\{[^}]+\}\s*from\s*['"]@(?:stats\/core|addmaple\/stats)['"];?\s*/g, '')
       .replace(/await\s+init\(\);?\s*/g, '');
     
     // Create a function that wraps the user code
@@ -130,23 +131,89 @@ const runCode = async () => {
       .map(name => `const ${name} = exports.${name};`)
       .join('\n');
     
-    const func = new Function(
-      'exports',
+    // Capture console.log output
+    const consoleOutput = [];
+    const originalLog = console.log;
+    const customConsole = {
+      ...console,
+      log: (...args) => {
+        consoleOutput.push(args.map(arg => formatOutput(arg)).join(' '));
+        originalLog(...args);
+      }
+    };
+    
+    try {
+      // Wrap code in a function that captures the last expression value
+      // Split by lines to find the last expression
+      const lines = transformedCode.trim().split('\n').filter(l => l.trim());
+      const lastLine = lines[lines.length - 1].trim();
+      
+      // If the last line is an expression statement (ends with ; but is just a variable/expression),
+      // or is a bare expression (no ;), convert it to a return statement
+      let execCode = transformedCode;
+      if (lastLine) {
+        // Check if it's a simple expression statement (e.g., "result;" or "result")
+        const isExpressionStatement = lastLine.endsWith(';') && 
+          !lastLine.includes('=') && 
+          !lastLine.includes('const ') && 
+          !lastLine.includes('let ') && 
+          !lastLine.includes('var ') &&
+          !lastLine.includes('function ') &&
+          !lastLine.includes('if ') &&
+          !lastLine.includes('for ') &&
+          !lastLine.includes('while ') &&
+          !lastLine.includes('return ') &&
+          !lastLine.startsWith('//');
+        
+        const isBareExpression = !lastLine.endsWith(';') && 
+          !lastLine.endsWith('{') && 
+          !lastLine.endsWith('}') &&
+          !lastLine.startsWith('//');
+        
+        if (isExpressionStatement || isBareExpression) {
+          // Remove semicolon if present, then add return
+          const expression = lastLine.replace(/;$/, '').trim();
+          const lastLineIndex = transformedCode.lastIndexOf(lastLine);
+          if (lastLineIndex >= 0) {
+            execCode = transformedCode.substring(0, lastLineIndex) + `return ${expression};`;
+          }
+        }
+      }
+      
+      const func = new Function(
+        'exports',
+        'console',
+        `
+        ${varDeclarations}
+        ${execCode}
       `
-      ${varDeclarations}
-      ${transformedCode}
-    `
-    );
+      );
 
-    // Execute the code with exports available
-    const result = func(exports);
+      // Execute the code with exports available
+      const result = func(exports, customConsole);
 
-    // Handle promises
-    if (result instanceof Promise) {
-      const resolved = await result;
-      output.value = formatOutput(resolved);
-    } else {
-      output.value = formatOutput(result);
+      // Handle promises
+      let finalResult;
+      if (result instanceof Promise) {
+        finalResult = await result;
+      } else {
+        finalResult = result;
+      }
+      
+      // If there's console output, show that; otherwise show the result
+      if (consoleOutput.length > 0) {
+        output.value = consoleOutput.join('\n');
+      } else if (finalResult !== undefined && finalResult !== null) {
+        output.value = formatOutput(finalResult);
+      } else {
+        // If no console output and result is undefined, try to show a helpful message
+        output.value = finalResult === undefined ? 'undefined' : String(finalResult);
+      }
+    } catch (err) {
+      throw err;
+    } finally {
+      // Restore original console.log
+      console.log = originalLog;
     }
   } catch (err) {
     error.value = err.message || String(err);

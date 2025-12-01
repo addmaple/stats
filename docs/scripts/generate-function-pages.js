@@ -90,34 +90,34 @@ function generateFunctionPage(functionName, jsdoc, category) {
   } else {
     // Generate a simple example based on function name
     if (functionName === 'sum' || functionName === 'mean' || functionName === 'median' || functionName === 'min' || functionName === 'max') {
-      defaultExample = `import { init, ${functionName} } from '@stats/core';
+      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 const data = [1, 2, 3, 4, 5];
 const result = ${functionName}(data);
-console.log(result);`;
+result;`;
     } else if (functionName === 'corrcoeff' || functionName === 'covariance' || functionName === 'spearmancoeff') {
-      defaultExample = `import { init, ${functionName} } from '@stats/core';
+      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 const x = [1, 2, 3, 4, 5];
 const y = [2, 4, 6, 8, 10];
 const result = ${functionName}(x, y);
-console.log(result);`;
+result;`;
     } else if (functionName.startsWith('normal') || functionName.startsWith('gamma') || functionName.startsWith('beta')) {
-      defaultExample = `import { init, ${functionName} } from '@stats/core';
+      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 const dist = ${functionName}({ mean: 0, sd: 1 });
 const result = dist.pdf(0);
-console.log(result);`;
+result;`;
     } else {
-      defaultExample = `import { init, ${functionName} } from '@stats/core';
+      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 // Example usage
 const result = ${functionName}(/* your parameters */);
-console.log(result);`;
+result;`;
     }
   }
 

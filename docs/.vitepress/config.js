@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import wasm from 'vite-plugin-wasm'
 
 export default defineConfig({
   title: '@stats/core',
@@ -100,25 +101,9 @@ export default defineConfig({
   },
   
   vite: {
-    resolve: {
-      alias: [
-        {
-          find: '@stats/core',
-          replacement: new URL('../../js/package/dist/index.js', import.meta.url).pathname,
-        },
-        {
-          find: /^\.\.\/\.\.\/\.\.\/crates\/stat-wasm\/pkg\/(.*)$/,
-          replacement: new URL('../../crates/stat-wasm/pkg/$1', import.meta.url).pathname,
-        },
-      ],
-    },
-    server: {
-      fs: {
-        allow: ['..'],
-      },
-    },
+    plugins: [wasm()],
     optimizeDeps: {
-      exclude: ['@stats/core'],
+      exclude: ['@addmaple/stats'],
     },
   },
 })
