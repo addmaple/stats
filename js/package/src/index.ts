@@ -1931,12 +1931,6 @@ export function quantiles(
   return readWasmArray(result);
 }
 
-export interface QuartilesResult {
-  q1: number;
-  q2: number;
-  q3: number;
-}
-
 /**
  * Calculate the quartiles (Q1, Q2/median, Q3) of an array.
  * 
@@ -1948,7 +1942,7 @@ export interface QuartilesResult {
  * **When to use:** Understand data distribution, create box plots, or identify outliers.
  * 
  * @param data - Input array
- * @returns Object with q1, q2 (median), and q3 properties
+ * @returns Array [q1, q2, q3] matching jStat behavior
  * 
  * @example
  * ```js
@@ -1956,18 +1950,18 @@ export interface QuartilesResult {
  * await init();
  * 
  * const scores = [65, 72, 78, 82, 85, 88, 90, 92, 95, 98];
- * const { q1, q2, q3 } = quartiles(scores);
+ * const [q1, q2, q3] = quartiles(scores);
  * // q1 ≈ 77, q2 ≈ 86.5 (median), q3 ≈ 92
  * ```
  */
-export function quartiles(data: ArrayLike<number>): QuartilesResult {
+export function quartiles(data: ArrayLike<number>): [number, number, number] {
   if (!wasmModule) {
     throw new Error('Wasm module not initialized. Call init() first.');
   }
 
   const len = data.length;
   if (len === 0) {
-    return { q1: NaN, q2: NaN, q3: NaN };
+    return [NaN, NaN, NaN];
   }
 
   const ptr = wasmModule.alloc_f64(len);
@@ -1977,11 +1971,7 @@ export function quartiles(data: ArrayLike<number>): QuartilesResult {
   const result = wasmModule.quartiles_f64(ptr, len);
   wasmModule.free_f64(ptr, len);
 
-  return {
-    q1: result.q1,
-    q2: result.q2,
-    q3: result.q3,
-  };
+  return [result.q1, result.q2, result.q3];
 }
 
 /**
