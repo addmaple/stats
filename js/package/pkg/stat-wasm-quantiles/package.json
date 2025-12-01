@@ -1,0 +1,21 @@
+{
+  "name": "stat-wasm-quantiles",
+  "type": "module",
+  "collaborators": [
+    "Your Name <you@example.com>"
+  ],
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "stat_wasm_quantiles_bg.wasm",
+    "stat_wasm_quantiles.js",
+    "stat_wasm_quantiles_bg.js",
+    "stat_wasm_quantiles.d.ts"
+  ],
+  "main": "stat_wasm_quantiles.js",
+  "types": "stat_wasm_quantiles.d.ts",
+  "sideEffects": [
+    "./stat_wasm_quantiles.js",
+    "./snippets/*"
+  ]
+}

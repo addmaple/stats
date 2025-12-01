@@ -1,0 +1,21 @@
+{
+  "name": "stat-wasm-correlation",
+  "type": "module",
+  "collaborators": [
+    "Your Name <you@example.com>"
+  ],
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "stat_wasm_correlation_bg.wasm",
+    "stat_wasm_correlation.js",
+    "stat_wasm_correlation_bg.js",
+    "stat_wasm_correlation.d.ts"
+  ],
+  "main": "stat_wasm_correlation.js",
+  "types": "stat_wasm_correlation.d.ts",
+  "sideEffects": [
+    "./stat_wasm_correlation.js",
+    "./snippets/*"
+  ]
+}
