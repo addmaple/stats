@@ -1,3 +1,5 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -17,6 +19,11 @@ impl ArrayResult {
     #[wasm_bindgen(getter)]
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
     }
 }
 

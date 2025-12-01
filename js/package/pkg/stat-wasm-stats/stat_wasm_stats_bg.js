@@ -66,6 +66,13 @@ export class ArrayResult {
         const ret = wasm.arrayresult_len(this.__wbg_ptr);
         return ret >>> 0;
     }
+    /**
+     * @returns {boolean}
+     */
+    get is_empty() {
+        const ret = wasm.arrayresult_is_empty(this.__wbg_ptr);
+        return ret !== 0;
+    }
 }
 if (Symbol.dispose) ArrayResult.prototype[Symbol.dispose] = ArrayResult.prototype.free;
 

@@ -16,6 +16,7 @@ export class ArrayResult {
   [Symbol.dispose](): void;
   readonly ptr: number;
   readonly len: number;
+  readonly is_empty: boolean;
 }
 
 export class ChiSquareResult {

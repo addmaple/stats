@@ -293,8 +293,7 @@ pub fn pooledvariance(data1: &[f64], data2: &[f64]) -> f64 {
     }
     let n1 = data1.len() as f64;
     let n2 = data2.len() as f64;
-    let pooled = ((n1 - 1.0) * var1 + (n2 - 1.0) * var2) / (n1 + n2 - 2.0);
-    pooled
+    ((n1 - 1.0) * var1 + (n2 - 1.0) * var2) / (n1 + n2 - 2.0)
 }
 
 /// Calculate pooled standard deviation for two groups.
@@ -552,7 +551,7 @@ pub fn geomean(data: &[f64]) -> f64 {
 /// # Returns
 /// The interpolated percentile value, or NaN for invalid inputs.
 pub fn percentile(data: &[f64], k: f64, exclusive: bool) -> f64 {
-    if data.is_empty() || k < 0.0 || k > 1.0 {
+    if data.is_empty() || !(0.0..=1.0).contains(&k) {
         return f64::NAN;
     }
     if data.iter().any(|v| v.is_nan()) {
@@ -1279,7 +1278,7 @@ pub fn anova(groups: &[&[f64]]) -> AnovaResult {
     AnovaResult {
         f_score,
         df_between: if k > 0 { k - 1 } else { 0 },
-        df_within: if total_n > k { total_n - k } else { 0 },
+        df_within: total_n.saturating_sub(k),
     }
 }
 
@@ -1563,7 +1562,7 @@ pub fn chi_square_test_with_cardinality(
         // Calculate chi-square statistic
         let mut chi_sq = 0.0;
         for r_idx in 0..num_rows {
-            for c_idx in 0..num_cols {
+            for (c_idx, _) in col_counts.iter().enumerate().take(num_cols) {
                 let observed = table[r_idx][c_idx] as f64;
                 if observed > 0.0 {
                     let row_total = row_counts[r_idx] as f64;
@@ -1661,7 +1660,7 @@ pub fn anova_f_score_categorical(groups: &[String], values: &[f64]) -> f64 {
     for (group, &value) in groups.iter().zip(values.iter()) {
         grouped_values
             .entry(group.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(value);
     }
 
@@ -1704,7 +1703,7 @@ pub fn anova_categorical(groups: &[String], values: &[f64]) -> AnovaResult {
     AnovaResult {
         f_score,
         df_between: if k > 0 { k - 1 } else { 0 },
-        df_within: if total_n > k { total_n - k } else { 0 },
+        df_within: total_n.saturating_sub(k),
     }
 }
 

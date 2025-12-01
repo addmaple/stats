@@ -7,6 +7,7 @@ export class ArrayResult {
   [Symbol.dispose](): void;
   readonly ptr: number;
   readonly len: number;
+  readonly is_empty: boolean;
 }
 
 export function alloc_f64(len: number): number;
