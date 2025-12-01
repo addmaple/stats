@@ -1,0 +1,17 @@
+# VitePress
+.vitepress/dist
+.vitepress/cache
+
+# TypeDoc output
+api/
+
+# Generated examples
+examples-generated/
+examples-extracted/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+

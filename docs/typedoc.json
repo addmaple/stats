@@ -1,0 +1,32 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["../js/package/src/index.ts"],
+  "tsconfig": "./tsconfig.json",
+  "out": "./api",
+  "name": "@stats/core API Reference",
+  "readme": "none",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryDocument": "README.md",
+  "hidePageTitle": false,
+  "hideGenerator": true,
+  "hideBreadcrumbs": false,
+  "hideInPageTOC": false,
+  "gitRevision": "main",
+  "sort": ["source-order"],
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Initialization",
+    "Basic Statistics",
+    "Advanced Statistics",
+    "Quantiles & Percentiles",
+    "Correlation & Covariance",
+    "Distributions",
+    "Statistical Tests",
+    "Transformations"
+  ]
+}
+

@@ -1,0 +1,17 @@
+[package]
+name = "stat-wasm-tests"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+stat-core = { path = "../stat-core" }
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = "z"
+lto = true

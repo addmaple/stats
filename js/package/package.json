@@ -1,0 +1,80 @@
+{
+  "name": "@addmaple/stats",
+  "version": "0.1.0",
+  "description": "High-performance statistics library built with Rust and WebAssembly",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "pkg",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "statistics",
+    "stats",
+    "wasm",
+    "webassembly",
+    "rust",
+    "math",
+    "data-analysis",
+    "distributions",
+    "correlation",
+    "quantiles",
+    "statistical-tests"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/addmaple/stats.git"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./stats": {
+      "import": "./dist/stats.js",
+      "require": "./dist/stats.js",
+      "types": "./dist/stats.d.ts"
+    },
+    "./distributions": {
+      "import": "./dist/distributions.js",
+      "require": "./dist/distributions.js",
+      "types": "./dist/distributions.d.ts"
+    },
+    "./quantiles": {
+      "import": "./dist/quantiles.js",
+      "require": "./dist/quantiles.js",
+      "types": "./dist/quantiles.d.ts"
+    },
+    "./correlation": {
+      "import": "./dist/correlation.js",
+      "require": "./dist/correlation.js",
+      "types": "./dist/correlation.d.ts"
+    },
+    "./tests": {
+      "import": "./dist/tests.js",
+      "require": "./dist/tests.js",
+      "types": "./dist/tests.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && npm run build:wasm",
+    "build:wasm": "bash scripts/build-wasm-modules.sh",
+    "build:wasm:full": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build ../../crates/stat-wasm --target bundler --out-dir pkg",
+    "dev": "tsc --watch",
+    "test": "node --test dist/**/*.test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "wasm-feature-detect": "^1.5.0"
+  }
+}

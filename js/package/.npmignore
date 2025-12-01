@@ -1,0 +1,36 @@
+# Source files
+src/
+tsconfig.json
+
+# Build scripts
+scripts/
+
+# Development files
+node_modules/
+*.log
+.DS_Store
+
+# Test files
+*.test.js
+*.test.ts
+*.test.d.ts
+
+# Development documentation
+SIZE_COMPARISON.md
+size-comparison/
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git files
+.git/
+.gitignore
+

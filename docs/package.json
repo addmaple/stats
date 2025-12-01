@@ -1,0 +1,20 @@
+{
+  "name": "@stats/docs",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview .",
+    "docs:api": "typedoc --options typedoc.json",
+    "docs:functions": "node scripts/generate-function-pages.js",
+    "docs:build": "npm run docs:api && npm run docs:functions && vitepress build docs",
+    "docs:serve": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "typedoc": "^0.25.0",
+    "typedoc-plugin-markdown": "^3.17.0",
+    "vitepress": "^1.0.0"
+  }
+}
+

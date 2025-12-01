@@ -1,0 +1,27 @@
+[package]
+name = "stat-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+name = "stat_core"
+crate-type = ["lib"]
+
+[dependencies]
+num-traits = "0.2"
+wide = "0.7"
+statistical = "1.0"
+statrs = { version = "0.18", default-features = false }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+approx = "0.5"
+ndarray = "0.16"
+ndarray-stats = "0.6"
+
+[[bench]]
+name = "stats_bench"
+harness = false
+

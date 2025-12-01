@@ -1,0 +1,51 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
+dist/
+*.wasm
+*.wasm.d.ts
+*.wasm.js
+*.wasm_bg.wasm
+*.wasm_bg.wasm.d.ts
+*.wasm_bg.js
+
+# WASM package directories (these are built artifacts)
+**/pkg/
+!js/package/pkg/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Benchmark results
+target/criterion/
+
+# Documentation build
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
