@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the overall architecture and design decisions for `@stats/core`.
+This document describes the overall architecture and design decisions for `@addmaple/stats`.
 
 ## Overall Architecture
 

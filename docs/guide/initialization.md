@@ -5,7 +5,7 @@ The `init()` function must be called before using any statistics functions. This
 ## Basic Usage
 
 ```js
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 
 await init();
 
@@ -26,7 +26,7 @@ The library uses WebAssembly for performance. The `init()` function:
 It's safe to call `init()` multiple times - it will only initialize once:
 
 ```js
-import { init } from '@stats/core';
+import { init } from '@addmaple/stats';
 
 await init();
 await init(); // Does nothing, already initialized
@@ -38,7 +38,7 @@ await init(); // Still does nothing
 If initialization fails (e.g., WASM not supported), `init()` will throw:
 
 ```js
-import { init } from '@stats/core';
+import { init } from '@addmaple/stats';
 
 try {
   await init();
@@ -56,13 +56,13 @@ Initialize as early as possible in your application:
 
 ```js
 // app.js
-import { init } from '@stats/core';
+import { init } from '@addmaple/stats';
 
 // Initialize immediately
 await init();
 
 // Import and use functions
-import { mean, variance } from '@stats/core';
+import { mean, variance } from '@addmaple/stats';
 ```
 
 ### 2. Module-Level Initialization
@@ -71,7 +71,7 @@ For modules that export statistics functions:
 
 ```js
 // stats-utils.js
-import { init, mean, variance } from '@stats/core';
+import { init, mean, variance } from '@addmaple/stats';
 
 let ready = false;
 
@@ -94,7 +94,7 @@ For React applications:
 
 ```js
 import { useEffect, useState } from 'react';
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 
 function StatsComponent() {
   const [ready, setReady] = useState(false);
@@ -114,7 +114,7 @@ function StatsComponent() {
 If you're not sure if initialization has completed:
 
 ```js
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 
 async function safeMean(data) {
   await init(); // Safe to call multiple times

@@ -1,13 +1,13 @@
 # Distribution Examples
 
-Examples of working with probability distributions in `@stats/core`.
+Examples of working with probability distributions in `@addmaple/stats`.
 
 ## Normal Distribution
 
 ### Basic Usage
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 
@@ -22,7 +22,7 @@ console.log(stdNormal.inv(0.975));  // 1.96... (97.5th percentile)
 ### Custom Parameters
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 
@@ -37,7 +37,7 @@ console.log(dist.inv(0.95));  // 95th percentile ≈ 124.67
 ### Array Operations
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 
@@ -58,7 +58,7 @@ console.log(cdfs);
 ### Real-World Example: Test Scores
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 
@@ -77,7 +77,7 @@ console.log(score90th); // ≈ 87.82
 ## Gamma Distribution
 
 ```js
-import { init, gamma } from '@stats/core';
+import { init, gamma } from '@addmaple/stats';
 
 await init();
 
@@ -95,7 +95,7 @@ const dist2 = gamma({ shape: 2, scale: 2 });
 ## Beta Distribution
 
 ```js
-import { init, beta } from '@stats/core';
+import { init, beta } from '@addmaple/stats';
 
 await init();
 
@@ -110,7 +110,7 @@ console.log(dist.inv(0.95));  // 95th percentile
 ## Student's t Distribution
 
 ```js
-import { init, studentT } from '@stats/core';
+import { init, studentT } from '@addmaple/stats';
 
 await init();
 
@@ -128,7 +128,7 @@ const dist2 = studentT({ mean: 0, scale: 1, dof: 10 });
 ## Chi-Squared Distribution
 
 ```js
-import { init, chiSquared } from '@stats/core';
+import { init, chiSquared } from '@addmaple/stats';
 
 await init();
 
@@ -143,7 +143,7 @@ console.log(dist.inv(0.95));  // 95th percentile
 ## Fisher F Distribution
 
 ```js
-import { init, fisherF } from '@stats/core';
+import { init, fisherF } from '@addmaple/stats';
 
 await init();
 
@@ -158,7 +158,7 @@ console.log(dist.inv(0.95));  // 95th percentile
 ## Exponential Distribution
 
 ```js
-import { init, exponential } from '@stats/core';
+import { init, exponential } from '@addmaple/stats';
 
 await init();
 
@@ -176,7 +176,7 @@ const dist2 = exponential({ scale: 2 });
 ## Plotting Distributions
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 
@@ -199,7 +199,7 @@ console.log('PDF values:', y);
 ## Confidence Intervals
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 

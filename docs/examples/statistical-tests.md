@@ -1,13 +1,13 @@
 # Statistical Tests Examples
 
-Examples of statistical tests with `@stats/core`.
+Examples of statistical tests with `@addmaple/stats`.
 
 ## ANOVA (Analysis of Variance)
 
 ### Basic ANOVA F-Score
 
 ```js
-import { init, anovaFScore } from '@stats/core';
+import { init, anovaFScore } from '@addmaple/stats';
 
 await init();
 
@@ -23,7 +23,7 @@ console.log(`F-score: ${fScore}`); // High F-score indicates significant differe
 ### Full ANOVA Test with P-Value
 
 ```js
-import { init, anovaTest, fisherF } from '@stats/core';
+import { init, anovaTest, fisherF } from '@addmaple/stats';
 
 await init();
 
@@ -48,7 +48,7 @@ if (result.pValue && result.pValue < 0.05) {
 ### Real-World Example: Drug Efficacy
 
 ```js
-import { init, anovaTest } from '@stats/core';
+import { init, anovaTest } from '@addmaple/stats';
 
 await init();
 
@@ -75,7 +75,7 @@ if (result.pValue && result.pValue < 0.05) {
 ### Example: Teaching Methods
 
 ```js
-import { init, anovaTest } from '@stats/core';
+import { init, anovaTest } from '@addmaple/stats';
 
 await init();
 
@@ -100,7 +100,7 @@ console.log(`Effect size (η²): ${etaSquared.toFixed(3)}`);
 ### Multiple Groups Comparison
 
 ```js
-import { init, anovaTest } from '@stats/core';
+import { init, anovaTest } from '@addmaple/stats';
 
 await init();
 
@@ -128,7 +128,7 @@ if (result.pValue && result.pValue < 0.05) {
 ### Error Handling
 
 ```js
-import { init, anovaFScore } from '@stats/core';
+import { init, anovaFScore } from '@addmaple/stats';
 
 await init();
 
@@ -146,7 +146,7 @@ console.log(fScore2); // NaN
 ## Interpreting ANOVA Results
 
 ```js
-import { init, anovaTest } from '@stats/core';
+import { init, anovaTest } from '@addmaple/stats';
 
 await init();
 

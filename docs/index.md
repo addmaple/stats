@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: "@stats/core"
+  name: "@addmaple/stats"
   text: "High-Performance Statistics"
-  tagline: Built with Rust and WebAssembly for blazing-fast statistical computations
+  tagline: A faster version of jStat using Rust compiled to WebAssembly under the hood
   actions:
     - theme: brand
       text: Get Started
@@ -17,13 +17,20 @@ hero:
       link: /api/
 
 features:
-  - title: ⚡ Blazing Fast
-    details: SIMD-optimized Rust core compiled to WebAssembly for maximum performance
-  - title: 📦 Tree-Shakeable
-    details: Modern ES modules with tree-shaking support - only import what you need
-  - title: 🌐 Browser Compatible
-    details: Works seamlessly in browsers and Node.js environments
-  - title: 📊 Comprehensive
-    details: Statistics, distributions, correlations, and statistical tests
+  - title: ⚡ 100x Faster
+    details: Some functions are up to 100x faster than jStat, powered by SIMD-optimized Rust compiled to WebAssembly
+  - title: 📚 Better Docs
+    details: Comprehensive documentation with interactive code examples to try out different functions
+  - title: ✅ Fully Compatible
+    details: Passes all tests from jStat - drop-in replacement with better performance
+  - title: 🔧 Modern Tech
+    details: Built with Rust and WebAssembly for maximum performance, tree-shakeable ES modules
+
 ---
+
+## About AddMaple
+
+**AddMaple** is a modern data analysis platform that enables fast data exploration with automatic statistical testing and AI powered text analysis.
+
+`@addmaple/stats` is the high-performance statistics library that powers AddMaple, providing the statistical foundation for fast and accurate data analysis.
 

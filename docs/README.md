@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains the documentation for `@stats/core`.
+This directory contains the documentation for `@addmaple/stats`.
 
 ## Structure
 

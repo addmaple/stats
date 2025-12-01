@@ -1,6 +1,6 @@
 # Performance Guide
 
-`@stats/core` is optimized for performance using SIMD-optimized Rust code compiled to WebAssembly. This guide provides comprehensive performance benchmarks and optimization tips.
+`@addmaple/stats` is optimized for performance using SIMD-optimized Rust code compiled to WebAssembly. This guide provides comprehensive performance benchmarks and optimization tips.
 
 ## Summary
 
@@ -30,7 +30,7 @@
 
 For small arrays, WASM interop overhead (copying data to/from WASM memory) can dominate simple operations. Functions that return arrays or require complex computations still show speedups.
 
-| Function | @stats/core | jStat | Speedup | Status |
+| Function | @addmaple/stats | jStat | Speedup | Status |
 |----------|-------------|-------|---------|--------|
 | **sum** | 0.84µs | 0.41µs | 0.49x | ✗ |
 | **mean** | 0.45µs | 0.12µs | 0.27x | ✗ |
@@ -78,7 +78,7 @@ For small arrays, WASM interop overhead (copying data to/from WASM memory) can d
 
 At 1K elements, SIMD optimizations start to shine. **95% of functions are faster** than jStat.
 
-| Function | @stats/core | jStat | Speedup | Status |
+| Function | @addmaple/stats | jStat | Speedup | Status |
 |----------|-------------|-------|---------|--------|
 | **sum** | 0.87µs | 0.90µs | **1.03x** | ✓ |
 | **mean** | 1.11µs | 0.91µs | 0.82x | ✗ |
@@ -126,7 +126,7 @@ At 1K elements, SIMD optimizations start to shine. **95% of functions are faster
 
 For large arrays, SIMD optimizations provide massive performance gains. **95% of functions are faster** than jStat (2 functions slower due to JS function call overhead in cumreduce).
 
-| Function | @stats/core | jStat | Speedup | Status |
+| Function | @addmaple/stats | jStat | Speedup | Status |
 |----------|-------------|-------|---------|--------|
 | **sum** | 4.89µs | 9.86µs | **2.01x** | ✓ |
 | **mean** | 5.49µs | 9.73µs | **1.77x** | ✓ |
@@ -174,7 +174,7 @@ For large arrays, SIMD optimizations provide massive performance gains. **95% of
 
 Analysis of Variance (ANOVA) performance varies by group size.
 
-| Configuration | @stats/core | jStat | Speedup | Status |
+| Configuration | @addmaple/stats | jStat | Speedup | Status |
 |---------------|-------------|-------|---------|--------|
 | **3 groups × 100 elements** | 11.11µs | 21.37µs | **1.92x** | ✓ |
 | **5 groups × 1,000 elements** | 10.23µs | 53.85µs | **5.26x** | ✓ |
@@ -189,7 +189,7 @@ Statistical distribution functions (Poisson and Binomial) show excellent perform
 
 ### Poisson Distribution
 
-| Operation | @stats/core | jStat | Speedup | Status |
+| Operation | @addmaple/stats | jStat | Speedup | Status |
 |-----------|-------------|-------|---------|--------|
 | **pdf(5)** (scalar) | 0.46µs | 0.49µs | **1.06x** | ✓ |
 | **cdf(10)** (scalar) | 0.26µs | 2.66µs | **10.19x** | ✓ |
@@ -206,7 +206,7 @@ Statistical distribution functions (Poisson and Binomial) show excellent perform
 
 ### Binomial Distribution
 
-| Operation | @stats/core | jStat | Speedup | Status |
+| Operation | @addmaple/stats | jStat | Speedup | Status |
 |-----------|-------------|-------|---------|--------|
 | **pdf(10)** (scalar) | 0.39µs | 0.28µs | 0.70x | ✗ |
 | **cdf(15)** (scalar) | 0.29µs | 1.11µs | **3.89x** | ✓ |
@@ -231,7 +231,7 @@ Statistical tests and confidence intervals show mixed performance due to WASM ca
 
 ### Statistical Tests
 
-| Operation | @stats/core | jStat/JS | Speedup | Status |
+| Operation | @addmaple/stats | jStat/JS | Speedup | Status |
 |-----------|-------------|----------|---------|--------|
 | **ttest (100)** | 1.20µs | 0.06µs | 0.05x | ✗ |
 | **ztest (100)** | 0.94µs | 0.05µs | 0.06x | ✗ |
@@ -240,7 +240,7 @@ Statistical tests and confidence intervals show mixed performance due to WASM ca
 
 ### Confidence Intervals
 
-| Operation | @stats/core | jStat/JS | Speedup | Status |
+| Operation | @addmaple/stats | jStat/JS | Speedup | Status |
 |-----------|-------------|----------|---------|--------|
 | **normalci** | 0.79µs | 0.05µs | 0.07x | ✗ |
 | **tci** | 2.56µs | 0.05µs | 0.02x | ✗ |
@@ -472,7 +472,7 @@ console.timeEnd('mean');
 
 ## Conclusion
 
-`@stats/core` provides **significant performance improvements** over jStat for arrays ≥ 1,000 elements, with many functions showing **2-177x speedups**. For very small arrays, copy overhead can make some simple operations slower, but complex statistics still show improvements.
+`@addmaple/stats` provides **significant performance improvements** over jStat for arrays ≥ 1,000 elements, with many functions showing **2-177x speedups**. For very small arrays, copy overhead can make some simple operations slower, but complex statistics still show improvements.
 
 **Key Highlights:**
 - 🚀 **177x faster** for `spearmancoeff` at 10K elements
@@ -482,7 +482,7 @@ console.timeEnd('mean');
 - ✅ **100% faster** for all functions at 10K+ elements
 - ✅ **92% faster** for functions at 1K+ elements
 
-**Recommendation**: Use `@stats/core` for production workloads with arrays ≥ 1,000 elements, or when you need the performance benefits of SIMD-optimized statistical operations. Distribution functions show exceptional performance, especially for CDF calculations and array operations.
+**Recommendation**: Use `@addmaple/stats` for production workloads with arrays ≥ 1,000 elements, or when you need the performance benefits of SIMD-optimized statistical operations. Distribution functions show exceptional performance, especially for CDF calculations and array operations.
 
 *Last updated: Generated from benchmark runs with SIMD enabled*
 *All 37 vector statistics functions + 2 distributions + 5 statistical tests/confidence intervals tested*

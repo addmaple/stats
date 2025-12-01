@@ -1,8 +1,8 @@
 # Introduction
 
-`@stats/core` is a high-performance statistics library built with Rust and WebAssembly, designed to be a modern, fast alternative to jStat.
+`@addmaple/stats` is a high-performance statistics library built with Rust and WebAssembly, designed to be a modern, fast alternative to jStat.
 
-## Why @stats/core?
+## Why @addmaple/stats?
 
 - **Performance**: SIMD-optimized Rust code compiled to WebAssembly delivers exceptional speed
 - **Modern API**: Clean, functional API with TypeScript support
@@ -20,7 +20,7 @@ The library is built with a clean separation of concerns:
 ## Quick Example
 
 ```js
-import { init, mean, variance, stdev } from '@stats/core';
+import { init, mean, variance, stdev } from '@addmaple/stats';
 
 // Initialize WASM module (required once)
 await init();
@@ -38,7 +38,7 @@ const s = stdev(data);       // 1.414...
 - Basic operations: `sum`, `mean`, `min`, `max`, `product`, `range`
 - Variance & standard deviation: `variance`, `sampleVariance`, `stdev`, `sampleStdev`, `coeffvar`
 - Advanced statistics: `median`, `mode`, `geomean`, `skewness`, `kurtosis`
-- Quantiles: `percentile`, `percentileOfScore`, `quartiles`, `iqr`, `quantiles`
+- Quantiles: `percentile`, `percentiles`, `percentileOfScore`, `quartiles`, `iqr`, `quantiles`
 - Transformations: `cumsum`, `cumprod`, `diff`, `rank`, `histogram`
 
 ### ✅ Distributions
@@ -61,5 +61,5 @@ const s = stdev(data);       // 1.414...
 
 ## Performance
 
-See [Performance Guide](/guide/performance) for detailed benchmarks comparing `@stats/core` to jStat.
+See [Performance Guide](/guide/performance) for detailed benchmarks comparing `@addmaple/stats` to jStat.
 

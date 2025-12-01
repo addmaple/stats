@@ -1,6 +1,6 @@
 # Browser Support
 
-`@stats/core` works in all modern browsers that support WebAssembly.
+`@addmaple/stats` works in all modern browsers that support WebAssembly.
 
 ## Supported Browsers
 
@@ -19,7 +19,7 @@ The library requires WebAssembly support. All modern browsers support WebAssembl
 // Check if WebAssembly is supported
 if (typeof WebAssembly === 'object') {
   // WebAssembly is supported
-  import('@stats/core').then(async ({ init, mean }) => {
+  import('@addmaple/stats').then(async ({ init, mean }) => {
     await init();
     console.log(mean([1, 2, 3]));
   });
@@ -58,7 +58,7 @@ You can use the library directly from a CDN:
 
 ```html
 <script type="module">
-  import { init, mean } from 'https://cdn.jsdelivr.net/npm/@stats/core/dist/index.js';
+  import { init, mean } from 'https://cdn.jsdelivr.net/npm/@addmaple/stats/dist/index.js';
   
   await init();
   console.log(mean([1, 2, 3]));
@@ -70,6 +70,6 @@ You can use the library directly from a CDN:
 TypeScript definitions are included. No additional configuration needed:
 
 ```ts
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 ```
 

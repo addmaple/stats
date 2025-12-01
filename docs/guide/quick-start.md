@@ -1,11 +1,11 @@
 # Quick Start
 
-Get up and running with `@stats/core` in minutes.
+Get up and running with `@addmaple/stats` in minutes.
 
 ## Basic Setup
 
 ```js
-import { init, mean, variance, stdev } from '@stats/core';
+import { init, mean, variance, stdev } from '@addmaple/stats';
 
 // Initialize WASM module (required once before using any functions)
 await init();
@@ -24,7 +24,7 @@ The `init()` function must be called once before using any statistics functions.
 ### Recommended Pattern
 
 ```js
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 
 // Initialize at module level or in your app startup
 await init();
@@ -38,7 +38,7 @@ export function analyzeData(data) {
 ### Alternative: Lazy Initialization
 
 ```js
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 
 let initialized = false;
 
@@ -58,7 +58,7 @@ export async function analyzeData(data) {
 ## Basic Statistics
 
 ```js
-import { init, sum, mean, min, max, range } from '@stats/core';
+import { init, sum, mean, min, max, range } from '@addmaple/stats';
 
 await init();
 
@@ -74,7 +74,7 @@ console.log(range(data));  // 40
 ## Advanced Statistics
 
 ```js
-import { init, median, mode, skewness, kurtosis } from '@stats/core';
+import { init, median, mode, skewness, kurtosis } from '@addmaple/stats';
 
 await init();
 
@@ -89,7 +89,7 @@ console.log(kurtosis(data));  // -1.2...
 ## Distributions
 
 ```js
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 
 await init();
 

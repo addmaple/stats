@@ -3,19 +3,19 @@
 ## npm
 
 ```bash
-npm install @stats/core
+npm install @addmaple/stats
 ```
 
 ## yarn
 
 ```bash
-yarn add @stats/core
+yarn add @addmaple/stats
 ```
 
 ## pnpm
 
 ```bash
-pnpm add @stats/core
+pnpm add @addmaple/stats
 ```
 
 ## Requirements
@@ -28,6 +28,6 @@ pnpm add @stats/core
 TypeScript definitions are included. No additional `@types` package needed.
 
 ```ts
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 ```
 
