@@ -74,8 +74,16 @@ let statsModule = null;
 
 onMounted(async () => {
   try {
-    // Import from the published npm package
-    const module = await import('@addmaple/stats');
+    // Try to import from local build first (for development), fallback to npm package
+    let module;
+    try {
+      // Use local build if available (for development/testing latest changes)
+      module = await import('../../../js/package/dist/index.js');
+    } catch (localErr) {
+      // Fallback to npm package (for production builds)
+      console.log('Local build not found, using npm package');
+      module = await import('@addmaple/stats');
+    }
     
     // Initialize the library
     await module.init();

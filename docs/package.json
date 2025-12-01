@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "bash scripts/build-local-package.sh",
     "dev": "vitepress dev .",
+    "prebuild": "bash scripts/build-local-package.sh",
     "build": "vitepress build .",
     "preview": "vitepress preview .",
     "docs:api": "typedoc --options typedoc.json",
