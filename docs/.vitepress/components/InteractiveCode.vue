@@ -74,16 +74,9 @@ let statsModule = null;
 
 onMounted(async () => {
   try {
-    // Try to import from local build first (for development), fallback to npm package
-    let module;
-    try {
-      // Use local build if available (for development/testing latest changes)
-      module = await import('../../../js/package/dist/index.js');
-    } catch (localErr) {
-      // Fallback to npm package (for production builds)
-      console.log('Local build not found, using npm package');
-      module = await import('@addmaple/stats');
-    }
+    // Use npm package (works in both dev and production)
+    // For local development, the prebuild script will build the package if Rust is available
+    const module = await import('@addmaple/stats');
     
     // Initialize the library
     await module.init();
