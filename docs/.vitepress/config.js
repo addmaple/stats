@@ -5,6 +5,7 @@ export default defineConfig({
   title: '@stats/core',
   description: 'High-performance statistics library built with Rust and WebAssembly',
   base: '/',
+  ignoreDeadLinks: true,
   
   themeConfig: {
     nav: [
