@@ -1,0 +1,13 @@
+{
+  "name": "@stats/bench",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "bench": "node bench.js"
+  },
+  "dependencies": {
+    "@stats/core": "file:../package",
+    "jstat": "^1.9.5"
+  }
+}
+
