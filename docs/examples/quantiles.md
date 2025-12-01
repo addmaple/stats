@@ -1,13 +1,13 @@
 # Quantiles and Percentiles Examples
 
-Examples of working with quantiles, percentiles, and quartiles in `@stats/core`.
+Examples of working with quantiles, percentiles, and quartiles in `@addmaple/stats`.
 
 ## Percentiles
 
 ### Basic Percentile Calculation
 
 ```js
-import { init, percentile } from '@stats/core';
+import { init, percentile } from '@addmaple/stats';
 
 await init();
 
@@ -29,7 +29,7 @@ console.log(q1); // 3.25
 ### Exclusive vs Inclusive Method
 
 ```js
-import { init, percentile } from '@stats/core';
+import { init, percentile } from '@addmaple/stats';
 
 await init();
 
@@ -47,7 +47,7 @@ console.log(exclusive); // 3
 ### Real-World Example: Test Scores
 
 ```js
-import { init, percentile } from '@stats/core';
+import { init, percentile } from '@addmaple/stats';
 
 await init();
 
@@ -67,7 +67,7 @@ console.log(`25th percentile: ${p25}`); // ~78
 ### Basic Quartile Calculation
 
 ```js
-import { init, quartiles } from '@stats/core';
+import { init, quartiles } from '@addmaple/stats';
 
 await init();
 
@@ -82,7 +82,7 @@ console.log(`Q3: ${q3}`); // 7.75
 ### Interquartile Range (IQR)
 
 ```js
-import { init, quartiles, iqr } from '@stats/core';
+import { init, quartiles, iqr } from '@addmaple/stats';
 
 await init();
 
@@ -101,7 +101,7 @@ console.log(`Manual IQR: ${manualIqr}`); // 4.5
 ### Outlier Detection Using IQR
 
 ```js
-import { init, quartiles, iqr } from '@stats/core';
+import { init, quartiles, iqr } from '@addmaple/stats';
 
 await init();
 
@@ -122,7 +122,7 @@ console.log('Outliers:', outliers); // [50]
 ### Calculate Multiple Quantiles at Once
 
 ```js
-import { init, quantiles } from '@stats/core';
+import { init, quantiles } from '@addmaple/stats';
 
 await init();
 
@@ -139,10 +139,26 @@ console.log('Deciles:', decileValues);
 // Float64Array [1.9, 2.8, 3.7, 4.6, 5.5, 6.4, 7.3, 8.2, 9.1]
 ```
 
+### Vectorized Percentiles Helper
+
+```js
+import { init, percentiles } from '@addmaple/stats';
+
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Request several percentiles in one call (10th, 50th, 90th)
+const ps = [0.1, 0.5, 0.9];
+const values = percentiles(data, ps);
+
+console.log(values); // Float64Array [1.9, 5.5, 9.1]
+```
+
 ### Percentiles of Score
 
 ```js
-import { init, percentileOfScore } from '@stats/core';
+import { init, percentileOfScore } from '@addmaple/stats';
 
 await init();
 
@@ -162,7 +178,7 @@ console.log(`Strict: ${strict * 100}th percentile`);
 ### Income Distribution Analysis
 
 ```js
-import { init, quartiles, iqr, percentile } from '@stats/core';
+import { init, quartiles, iqr, percentile } from '@addmaple/stats';
 
 await init();
 
@@ -188,7 +204,7 @@ console.log(`Top 10%: $${top10.toLocaleString()}`);
 ### Test Score Analysis
 
 ```js
-import { init, percentile, quartiles } from '@stats/core';
+import { init, percentile, quartiles } from '@addmaple/stats';
 
 await init();
 
@@ -211,7 +227,7 @@ console.log(`Box plot: [${q1}, ${q2}, ${q3}]`);
 ### Performance Metrics
 
 ```js
-import { init, percentile, quartiles } from '@stats/core';
+import { init, percentile, quartiles } from '@addmaple/stats';
 
 await init();
 

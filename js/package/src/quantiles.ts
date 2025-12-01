@@ -140,6 +140,13 @@ export function iqr(data: ArrayLike<number>): number {
   return result;
 }
 
+export function percentiles(
+  data: ArrayLike<number>,
+  ps: ArrayLike<number>
+): Float64Array {
+  return quantiles(data, ps);
+}
+
 export function quantiles(data: ArrayLike<number>, quantiles: ArrayLike<number>): Float64Array {
   if (!wasmModule) {
     throw new Error('Wasm module not initialized. Call init() first.');

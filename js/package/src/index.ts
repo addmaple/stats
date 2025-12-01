@@ -5,6 +5,56 @@ interface ArrayResult {
   len: number;
 }
 
+/**
+ * Full descriptive statistics snapshot for a numeric array.
+ *
+ * Returned by {@link descriptiveStats}.
+ */
+export interface DescriptiveStatsResult {
+  /** Number of observations (N) */
+  count: number;
+  /** Sum of all values */
+  sum: number;
+  /** Arithmetic mean */
+  mean: number;
+  /** Population variance */
+  variance: number;
+  /** Sample variance (Bessel's correction) */
+  sampleVariance: number;
+  /** Population standard deviation */
+  stdev: number;
+  /** Sample standard deviation */
+  sampleStdev: number;
+  /** Minimum value */
+  min: number;
+  /** Maximum value */
+  max: number;
+  /** Range (max - min) */
+  range: number;
+  /** Median (50th percentile) */
+  median: number;
+  /** First quartile (25th percentile) */
+  q1: number;
+  /** Second quartile (50th percentile, same as median) */
+  q2: number;
+  /** Third quartile (75th percentile) */
+  q3: number;
+  /** Interquartile range (Q3 - Q1) */
+  iqr: number;
+  /** Coefficient of variation (stdev / mean) */
+  coeffvar: number;
+  /** Mean absolute deviation from the mean */
+  meandev: number;
+  /** Median absolute deviation from the median */
+  meddev: number;
+  /** Skewness (third standardized moment) */
+  skewness: number;
+  /** Excess kurtosis (fourth standardized moment minus 3) */
+  kurtosis: number;
+  /** Standard error of the mean (sampleStdev / sqrt(N)) */
+  standardError: number;
+}
+
 // Type definitions for wasm module
 interface WasmModule {
   get_memory(): WebAssembly.Memory;
@@ -1879,6 +1929,27 @@ export function qtest(
 }
 
 /**
+ * Calculate multiple percentiles at once.
+ *
+ * This is a convenience wrapper around `quantiles` that accepts an array of
+ * percentile values and returns the corresponding values in the data.
+ *
+ * **Note:** Percentiles are expressed as quantiles between 0.0 and 1.0,
+ * matching jStat’s behavior. For example, `[0.1, 0.5, 0.9]` corresponds to
+ * the 10th, 50th, and 90th percentiles.
+ *
+ * @param data - Input array
+ * @param ps - Array of percentile values between 0.0 and 1.0
+ * @returns Array of percentile values in the same order as `ps`
+ */
+export function percentiles(
+  data: ArrayLike<number>,
+  ps: ArrayLike<number>
+): Float64Array {
+  return quantiles(data, ps);
+}
+
+/**
  * Calculate multiple quantiles at once.
  * 
  * More efficient than calling `percentile` multiple times. Calculates several 
@@ -2015,6 +2086,105 @@ export function iqr(data: ArrayLike<number>): number {
   wasmModule.free_f64(ptr, len);
 
   return result;
+}
+
+/**
+ * Calculate a rich set of descriptive statistics for an array in one call.
+ *
+ * This helper wraps core vector statistics (mean, variance, quartiles, skewness, etc.)
+ * and returns them in a single object, so you don't need to call each function
+ * individually.
+ *
+ * @param data - Input array of numbers
+ * @returns An object with common descriptive statistics
+ *
+ * @example
+ * ```js
+ * import { init, descriptiveStats } from '@stats/core';
+ * await init();
+ *
+ * const data = [1, 2, 3, 4, 5];
+ * const stats = descriptiveStats(data);
+ *
+ * console.log(stats.mean);   // 3
+ * console.log(stats.median); // 3
+ * console.log(stats.min);    // 1
+ * console.log(stats.max);    // 5
+ * ```
+ */
+export function descriptiveStats(data: ArrayLike<number>): DescriptiveStatsResult {
+  const count = data.length;
+
+  if (count === 0) {
+    const nan = NaN;
+    return {
+      count: 0,
+      sum: 0,
+      mean: nan,
+      variance: nan,
+      sampleVariance: nan,
+      stdev: nan,
+      sampleStdev: nan,
+      min: nan,
+      max: nan,
+      range: nan,
+      median: nan,
+      q1: nan,
+      q2: nan,
+      q3: nan,
+      iqr: nan,
+      coeffvar: nan,
+      meandev: nan,
+      meddev: nan,
+      skewness: nan,
+      kurtosis: nan,
+      standardError: nan,
+    };
+  }
+
+  const sumVal = sum(data);
+  const meanVal = mean(data);
+  const varianceVal = variance(data);
+  const sampleVarianceVal = sampleVariance(data);
+  const stdevVal = stdev(data);
+  const sampleStdevVal = sampleStdev(data);
+  const minVal = min(data);
+  const maxVal = max(data);
+  const rangeVal = range(data);
+  const [q1, q2, q3] = quartiles(data);
+  const medianVal = q2;
+  const iqrVal = iqr(data);
+  const coeffvarVal = coeffvar(data);
+  const meandevVal = meandev(data);
+  const meddevVal = meddev(data);
+  const skewVal = skewness(data);
+  const kurtVal = kurtosis(data);
+  const standardError =
+    !Number.isNaN(sampleStdevVal) && count > 0 ? sampleStdevVal / Math.sqrt(count) : NaN;
+
+  return {
+    count,
+    sum: sumVal,
+    mean: meanVal,
+    variance: varianceVal,
+    sampleVariance: sampleVarianceVal,
+    stdev: stdevVal,
+    sampleStdev: sampleStdevVal,
+    min: minVal,
+    max: maxVal,
+    range: rangeVal,
+    median: medianVal,
+    q1,
+    q2,
+    q3,
+    iqr: iqrVal,
+    coeffvar: coeffvarVal,
+    meandev: meandevVal,
+    meddev: meddevVal,
+    skewness: skewVal,
+    kurtosis: kurtVal,
+    standardError,
+  };
 }
 
 // =============================================================================

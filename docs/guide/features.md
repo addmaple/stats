@@ -1,6 +1,6 @@
-# Feature Comparison: @stats/core vs jStat
+# Feature Comparison: @addmaple/stats vs jStat
 
-This document compares the features available in `@stats/core` versus `jStat`.
+This document compares the features available in `@addmaple/stats` versus `jStat`.
 
 ## Summary
 
@@ -47,9 +47,11 @@ This document compares the features available in `@stats/core` versus `jStat`.
 - ✅ `pooledvariance` - Pooled variance for two groups
 - ✅ `pooledstdev` - Pooled standard deviation for two groups
 - ✅ `stanMoment` - Standardized moment (k-th standardized moment)
+- ✅ `descriptiveStats` - One-shot descriptive statistics snapshot (mean, stdev, quartiles, etc.)
 
 #### Quantiles & Percentiles
 - ✅ `percentile` - Percentile with linear interpolation
+- ✅ `percentiles` - Vectorized helper for multiple percentiles at once
 - ✅ `percentileOfScore` - Find percentile rank of a value
 - ✅ `quartiles` - First, second (median), third quartiles
 - ✅ `iqr` - Interquartile range
@@ -300,7 +302,7 @@ All core vector statistics functions are now implemented!
 
 ## Notes
 
-- **Focus**: `@stats/core` focuses on **high-performance vector statistics** with SIMD optimizations
+- **Focus**: `@addmaple/stats` focuses on **high-performance vector statistics** with SIMD optimizations
 - **Distributions**: Currently supports 18 distributions with full pdf/cdf/inv support
 - **Matrix Operations**: Not currently implemented (jStat has extensive matrix support)
 - **Performance**: Implemented functions are significantly faster than jStat (see [Performance Guide](/guide/performance))
