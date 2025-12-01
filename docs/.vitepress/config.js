@@ -106,6 +106,9 @@ export default defineConfig({
     optimizeDeps: {
       exclude: ['@addmaple/stats'],
     },
+    build: {
+      target: 'es2022', // Support top-level await
+    },
   },
 })
 
