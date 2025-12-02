@@ -167,7 +167,7 @@ export default defineConfig({
           text: 'Complete Reference',
           items: [
             { text: 'All Functions', link: '/api/functions/' },
-            { text: 'Complete API Reference', link: '/api/' }
+            { text: 'Complete API Reference', link: '/api/README' }
           ]
         },
         {
