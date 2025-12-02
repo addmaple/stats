@@ -6,7 +6,7 @@ export default defineConfig({
   description: 'A faster version of jStat using Rust compiled to WebAssembly under the hood',
   base: '/',
   outDir: './dist',
-  ignoreDeadLinks: true, // Temporarily enabled - investigate specific dead links from Vercel logs
+  ignoreDeadLinks: false,
   
   themeConfig: {
     nav: [
@@ -167,7 +167,7 @@ export default defineConfig({
           text: 'Complete Reference',
           items: [
             { text: 'All Functions', link: '/api/functions/' },
-            { text: 'Complete API Reference', link: '/api/README' }
+            { text: 'Complete API Reference', link: '/api/' }
           ]
         },
         {
