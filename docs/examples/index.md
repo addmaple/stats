@@ -89,5 +89,5 @@ await init();
 // Now use any statistics functions
 ```
 
-For more information, see the [Quick Start Guide](/guide/quick-start) or browse the [API Reference](/api/index).
+For more information, see the [Quick Start Guide](/guide/quick-start) or browse the [API Reference](/api/README).
 
