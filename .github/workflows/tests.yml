@@ -108,3 +108,55 @@ jobs:
         working-directory: js/tests
         run: npm test
 
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-wasm-
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: js/package/node_modules
+          key: ${{ runner.os }}-npm-pkg-${{ hashFiles('js/package/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-pkg-
+      
+      - name: Install JS package dependencies
+        working-directory: js/package
+        run: npm ci
+      
+      - name: Build JS package
+        working-directory: js/package
+        run: npm run build
+      
+      - name: Check bundle sizes
+        working-directory: js/package
+        run: node scripts/check-bundle-size.js
+
