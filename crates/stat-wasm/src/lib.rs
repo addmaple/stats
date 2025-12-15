@@ -56,6 +56,21 @@ pub fn free_f64(ptr: *mut f64, len: usize) {
     }
 }
 
+#[wasm_bindgen]
+pub fn alloc_f32(len: usize) -> *mut f32 {
+    let mut vec = Vec::<f32>::with_capacity(len);
+    let ptr = vec.as_mut_ptr();
+    std::mem::forget(vec);
+    ptr
+}
+
+#[wasm_bindgen]
+pub fn free_f32(ptr: *mut f32, len: usize) {
+    unsafe {
+        let _ = Vec::from_raw_parts(ptr, len, len);
+    }
+}
+
 fn map_distribution_error(err: stat_core::DistributionError) -> JsValue {
     JsValue::from_str(&err.to_string())
 }
@@ -376,6 +391,141 @@ pub fn histogram_edges_f64(
     vec_to_array_result(bins_f64)
 }
 
+/// Histogram result with edges and counts
+#[wasm_bindgen]
+pub struct HistogramWithEdges {
+    edges: ArrayResult,
+    counts: ArrayResult,
+}
+
+#[wasm_bindgen]
+impl HistogramWithEdges {
+    #[wasm_bindgen(getter)]
+    pub fn edges(&self) -> ArrayResult {
+        self.edges
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn counts(&self) -> ArrayResult {
+        self.counts
+    }
+}
+
+fn vec_to_array_result_usize(data: Vec<usize>) -> ArrayResult {
+    let data_f64: Vec<f64> = data.into_iter().map(|x| x as f64).collect();
+    vec_to_array_result(data_f64)
+}
+
+/// Calculate histogram with fixed-width binning, returning edges and counts.
+#[wasm_bindgen]
+pub fn histogram_fixed_width_with_edges_f64(
+    ptr: *const f64,
+    len: usize,
+    bins: usize,
+) -> HistogramWithEdges {
+    let data = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let result = stat_core::histogram_fixed_width_with_edges(data, bins);
+    HistogramWithEdges {
+        edges: vec_to_array_result(result.edges),
+        counts: vec_to_array_result_usize(result.counts),
+    }
+}
+
+/// Calculate histogram with equal-frequency binning, returning edges and counts.
+#[wasm_bindgen]
+pub fn histogram_equal_frequency_with_edges_f64(
+    ptr: *const f64,
+    len: usize,
+    bins: usize,
+) -> HistogramWithEdges {
+    let data = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let result = stat_core::histogram_equal_frequency_with_edges(data, bins);
+    HistogramWithEdges {
+        edges: vec_to_array_result(result.edges),
+        counts: vec_to_array_result_usize(result.counts),
+    }
+}
+
+/// Calculate histogram with automatic binning, returning edges and counts.
+/// rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+/// bins_override: 0 means use rule's default, otherwise override
+#[wasm_bindgen]
+pub fn histogram_auto_with_edges_f64(
+    ptr: *const f64,
+    len: usize,
+    rule: usize,
+    bins_override: usize,
+) -> HistogramWithEdges {
+    let data = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let binning_rule = match rule {
+        0 => stat_core::BinningRule::FreedmanDiaconis,
+        1 => stat_core::BinningRule::Scott,
+        2 => stat_core::BinningRule::SqrtN,
+        _ => stat_core::BinningRule::FreedmanDiaconis, // Default fallback
+    };
+    let bins_opt = if bins_override == 0 {
+        None
+    } else {
+        Some(bins_override)
+    };
+    let result = stat_core::histogram_auto_with_edges(data, binning_rule, bins_opt);
+    HistogramWithEdges {
+        edges: vec_to_array_result(result.edges),
+        counts: vec_to_array_result_usize(result.counts),
+    }
+}
+
+/// Calculate histogram with automatic binning and tail collapse, returning edges and counts.
+/// rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+/// bins_override: 0 means use rule's default, otherwise override
+/// k: IQR multiplier for outlier detection (typically 1.5)
+#[wasm_bindgen]
+pub fn histogram_auto_with_edges_collapse_tails_f64(
+    ptr: *const f64,
+    len: usize,
+    rule: usize,
+    bins_override: usize,
+    k: f64,
+) -> HistogramWithEdges {
+    let data = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let binning_rule = match rule {
+        0 => stat_core::BinningRule::FreedmanDiaconis,
+        1 => stat_core::BinningRule::Scott,
+        2 => stat_core::BinningRule::SqrtN,
+        _ => stat_core::BinningRule::FreedmanDiaconis, // Default fallback
+    };
+    let bins_opt = if bins_override == 0 {
+        None
+    } else {
+        Some(bins_override)
+    };
+    let result =
+        stat_core::histogram_auto_with_edges_collapse_tails(data, binning_rule, bins_opt, k);
+    HistogramWithEdges {
+        edges: vec_to_array_result(result.edges),
+        counts: vec_to_array_result_usize(result.counts),
+    }
+}
+
+/// Calculate histogram with custom edges, returning edges and counts.
+/// clamp_outside: if true, values outside edges are clamped to first/last bin
+#[wasm_bindgen]
+pub fn histogram_custom_with_edges_f64(
+    data_ptr: *const f64,
+    data_len: usize,
+    edges_ptr: *const f64,
+    edges_len: usize,
+    clamp_outside: bool,
+) -> HistogramWithEdges {
+    let data = unsafe { std::slice::from_raw_parts(data_ptr, data_len) };
+    let edges = unsafe { std::slice::from_raw_parts(edges_ptr, edges_len) };
+    let result = stat_core::histogram_custom_with_edges(data, edges, clamp_outside);
+    HistogramWithEdges {
+        edges: vec_to_array_result(result.edges),
+        counts: vec_to_array_result_usize(result.counts),
+    }
+}
+
 /// ANOVA result struct for JS
 #[wasm_bindgen]
 pub struct AnovaResult {
@@ -407,11 +557,7 @@ impl AnovaResult {
 /// lens_ptr: pointer to array of group lengths (as f64 for simplicity)
 /// num_groups: number of groups
 #[wasm_bindgen]
-pub fn anova_f_score_flat(
-    data_ptr: *const f64,
-    lens_ptr: *const f64,
-    num_groups: usize,
-) -> f64 {
+pub fn anova_f_score_flat(data_ptr: *const f64, lens_ptr: *const f64, num_groups: usize) -> f64 {
     if num_groups < 2 {
         return f64::NAN;
     }
@@ -437,11 +583,7 @@ pub fn anova_f_score_flat(
 
 /// ANOVA with full result (F-score + degrees of freedom)
 #[wasm_bindgen]
-pub fn anova_flat(
-    data_ptr: *const f64,
-    lens_ptr: *const f64,
-    num_groups: usize,
-) -> AnovaResult {
+pub fn anova_flat(data_ptr: *const f64, lens_ptr: *const f64, num_groups: usize) -> AnovaResult {
     if num_groups < 2 {
         return AnovaResult {
             f_score: f64::NAN,
@@ -511,7 +653,7 @@ pub fn chi_square_test(cat1: Vec<String>, cat2: Vec<String>) -> ChiSquareResult 
 }
 
 /// Chi-square test with optional cardinality hints for optimization
-/// 
+///
 /// If cardinality1 and cardinality2 are provided (number of unique categories),
 /// uses a faster array-based algorithm.
 #[wasm_bindgen]
@@ -521,12 +663,8 @@ pub fn chi_square_test_with_cardinality(
     cardinality1: Option<usize>,
     cardinality2: Option<usize>,
 ) -> ChiSquareResult {
-    let result = stat_core::chi_square_test_with_cardinality(
-        &cat1,
-        &cat2,
-        cardinality1,
-        cardinality2,
-    );
+    let result =
+        stat_core::chi_square_test_with_cardinality(&cat1, &cat2, cardinality1, cardinality2);
     ChiSquareResult {
         statistic: result.statistic,
         p_value: result.p_value,
@@ -596,6 +734,14 @@ fn slice_from<'a>(ptr: *const f64, len: usize) -> &'a [f64] {
 }
 
 fn slice_from_mut<'a>(ptr: *mut f64, len: usize) -> &'a mut [f64] {
+    unsafe { std::slice::from_raw_parts_mut(ptr, len) }
+}
+
+fn slice_from_f32<'a>(ptr: *const f32, len: usize) -> &'a [f32] {
+    unsafe { std::slice::from_raw_parts(ptr, len) }
+}
+
+fn slice_from_mut_f32<'a>(ptr: *mut f32, len: usize) -> &'a mut [f32] {
     unsafe { std::slice::from_raw_parts_mut(ptr, len) }
 }
 
@@ -886,6 +1032,56 @@ impl RegressionResult {
 }
 
 #[wasm_bindgen]
+pub struct RegressionCoeffs {
+    slope: f64,
+    intercept: f64,
+    r_squared: f64,
+}
+
+#[wasm_bindgen]
+impl RegressionCoeffs {
+    #[wasm_bindgen(getter)]
+    pub fn slope(&self) -> f64 {
+        self.slope
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn intercept(&self) -> f64 {
+        self.intercept
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn r_squared(&self) -> f64 {
+        self.r_squared
+    }
+}
+
+#[wasm_bindgen]
+pub struct RegressionCoeffsF32 {
+    slope: f32,
+    intercept: f32,
+    r_squared: f32,
+}
+
+#[wasm_bindgen]
+impl RegressionCoeffsF32 {
+    #[wasm_bindgen(getter)]
+    pub fn slope(&self) -> f32 {
+        self.slope
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn intercept(&self) -> f32 {
+        self.intercept
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn r_squared(&self) -> f32 {
+        self.r_squared
+    }
+}
+
+#[wasm_bindgen]
 pub fn regress_f64(
     x_ptr: *const f64,
     x_len: usize,
@@ -901,6 +1097,268 @@ pub fn regress_f64(
         intercept: result.intercept,
         r_squared: result.r_squared,
         residuals: vec_to_array_result(result.residuals),
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_naive_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionResult {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let result = stat_core::regress_naive(x, y);
+
+    RegressionResult {
+        slope: result.slope,
+        intercept: result.intercept,
+        r_squared: result.r_squared,
+        residuals: vec_to_array_result(result.residuals),
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_simd_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionResult {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let result = stat_core::regress_simd(x, y);
+
+    RegressionResult {
+        slope: result.slope,
+        intercept: result.intercept,
+        r_squared: result.r_squared,
+        residuals: vec_to_array_result(result.residuals),
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_wasm_kernels_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionResult {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let result = stat_core::regress_kernels(x, y);
+
+    RegressionResult {
+        slope: result.slope,
+        intercept: result.intercept,
+        r_squared: result.r_squared,
+        residuals: vec_to_array_result(result.residuals),
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Coefficients-only regression (no residual allocation)
+// -----------------------------------------------------------------------------
+
+#[wasm_bindgen]
+pub fn regress_coeffs_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let c = stat_core::regress_simd_coeffs(x, y);
+    RegressionCoeffs {
+        slope: c.slope,
+        intercept: c.intercept,
+        r_squared: c.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_naive_coeffs_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let c = stat_core::regress_naive_coeffs(x, y);
+    RegressionCoeffs {
+        slope: c.slope,
+        intercept: c.intercept,
+        r_squared: c.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_simd_coeffs_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let c = stat_core::regress_simd_coeffs(x, y);
+    RegressionCoeffs {
+        slope: c.slope,
+        intercept: c.intercept,
+        r_squared: c.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_wasm_kernels_coeffs_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let c = stat_core::regress_kernels_coeffs(x, y);
+    RegressionCoeffs {
+        slope: c.slope,
+        intercept: c.intercept,
+        r_squared: c.r_squared,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// In-place residuals (caller provides output buffer)
+// -----------------------------------------------------------------------------
+
+#[wasm_bindgen]
+pub fn regress_simd_residuals_inplace_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+    residuals_out_ptr: *mut f64,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let coeffs = stat_core::regress_simd_coeffs(x, y);
+    if x_len != y_len || coeffs.slope.is_nan() {
+        return RegressionCoeffs {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+        };
+    }
+    let out = slice_from_mut(residuals_out_ptr, x_len);
+    stat_core::residuals_into(out, x, y, coeffs.slope, coeffs.intercept);
+    RegressionCoeffs {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_wasm_kernels_residuals_inplace_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+    residuals_out_ptr: *mut f64,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let coeffs = stat_core::regress_kernels_coeffs(x, y);
+    if x_len != y_len || coeffs.slope.is_nan() {
+        return RegressionCoeffs {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+        };
+    }
+    let out = slice_from_mut(residuals_out_ptr, x_len);
+    stat_core::residuals_into(out, x, y, coeffs.slope, coeffs.intercept);
+    RegressionCoeffs {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_naive_residuals_inplace_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+    residuals_out_ptr: *mut f64,
+) -> RegressionCoeffs {
+    let x = slice_from(x_ptr, x_len);
+    let y = slice_from(y_ptr, y_len);
+    let coeffs = stat_core::regress_naive_coeffs(x, y);
+    if x_len != y_len || coeffs.slope.is_nan() {
+        return RegressionCoeffs {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+        };
+    }
+    let out = slice_from_mut(residuals_out_ptr, x_len);
+    stat_core::residuals_into(out, x, y, coeffs.slope, coeffs.intercept);
+    RegressionCoeffs {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
+    }
+}
+
+// -----------------------------------------------------------------------------
+// f32 regression (SIMD-focused, wasm-friendly)
+// -----------------------------------------------------------------------------
+
+#[wasm_bindgen]
+pub fn regress_simd_coeffs_f32(
+    x_ptr: *const f32,
+    x_len: usize,
+    y_ptr: *const f32,
+    y_len: usize,
+) -> RegressionCoeffsF32 {
+    let x = slice_from_f32(x_ptr, x_len);
+    let y = slice_from_f32(y_ptr, y_len);
+    let c = stat_core::regress_simd_coeffs_f32(x, y);
+    RegressionCoeffsF32 {
+        slope: c.slope,
+        intercept: c.intercept,
+        r_squared: c.r_squared,
+    }
+}
+
+#[wasm_bindgen]
+pub fn regress_simd_residuals_inplace_f32(
+    x_ptr: *const f32,
+    x_len: usize,
+    y_ptr: *const f32,
+    y_len: usize,
+    residuals_out_ptr: *mut f32,
+) -> RegressionCoeffsF32 {
+    let x = slice_from_f32(x_ptr, x_len);
+    let y = slice_from_f32(y_ptr, y_len);
+    let coeffs = stat_core::regress_simd_coeffs_f32(x, y);
+    if x_len != y_len || coeffs.slope.is_nan() {
+        return RegressionCoeffsF32 {
+            slope: f32::NAN,
+            intercept: f32::NAN,
+            r_squared: f32::NAN,
+        };
+    }
+    let out = slice_from_mut_f32(residuals_out_ptr, x_len);
+    stat_core::residuals_into_f32(out, x, y, coeffs.slope, coeffs.intercept);
+    RegressionCoeffsF32 {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
     }
 }
 

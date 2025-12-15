@@ -171,4 +171,3 @@ pub fn tci_f64(alpha: f64, mean: f64, stdev: f64, n: f64) -> Vec<f64> {
     let ci = stat_core::tci(alpha, mean, stdev, n);
     vec![ci[0], ci[1]]
 }
-

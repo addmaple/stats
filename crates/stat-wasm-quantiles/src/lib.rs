@@ -138,6 +138,47 @@ pub fn quantiles_f64(
     vec_to_array_result(stat_core::quantiles(data, qs))
 }
 
+// Weighted quantile functions
+#[wasm_bindgen]
+pub fn weighted_percentile_f64(
+    data_ptr: *const f64,
+    data_len: usize,
+    weights_ptr: *const f64,
+    weights_len: usize,
+    p: f64,
+) -> f64 {
+    let data = slice_from(data_ptr, data_len);
+    let weights = slice_from(weights_ptr, weights_len);
+    stat_core::weighted_percentile(data, weights, p)
+}
+
+#[wasm_bindgen]
+pub fn weighted_quantiles_f64(
+    data_ptr: *const f64,
+    data_len: usize,
+    weights_ptr: *const f64,
+    weights_len: usize,
+    qs_ptr: *const f64,
+    qs_len: usize,
+) -> ArrayResult {
+    let data = slice_from(data_ptr, data_len);
+    let weights = slice_from(weights_ptr, weights_len);
+    let qs = slice_from(qs_ptr, qs_len);
+    vec_to_array_result(stat_core::weighted_quantiles(data, weights, qs))
+}
+
+#[wasm_bindgen]
+pub fn weighted_median_f64(
+    data_ptr: *const f64,
+    data_len: usize,
+    weights_ptr: *const f64,
+    weights_len: usize,
+) -> f64 {
+    let data = slice_from(data_ptr, data_len);
+    let weights = slice_from(weights_ptr, weights_len);
+    stat_core::weighted_median(data, weights)
+}
+
 // Histogram functions
 #[wasm_bindgen]
 pub fn histogram_f64(ptr: *const f64, len: usize, bin_count: usize) -> ArrayResult {
@@ -160,4 +201,3 @@ pub fn histogram_edges_f64(
     let bins_f64: Vec<f64> = bins.into_iter().map(|x| x as f64).collect();
     vec_to_array_result(bins_f64)
 }
-

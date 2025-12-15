@@ -193,4 +193,3 @@ pub fn histogram_f64(ptr: *const f64, len: usize, bin_count: usize) -> ArrayResu
     let bins_f64: Vec<f64> = bins.iter().map(|&x| x as f64).collect();
     vec_to_array_result(bins_f64)
 }
-

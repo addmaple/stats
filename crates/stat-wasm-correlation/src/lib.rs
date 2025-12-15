@@ -56,4 +56,3 @@ pub fn spearmancoeff_f64(x_ptr: *const f64, x_len: usize, y_ptr: *const f64, y_l
     let y = slice_from(y_ptr, y_len);
     stat_core::spearmancoeff(x, y)
 }
-
