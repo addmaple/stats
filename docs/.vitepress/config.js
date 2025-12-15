@@ -31,6 +31,8 @@ export default defineConfig({
           items: [
             { text: 'Initialization', link: '/guide/initialization' },
             { text: 'Performance', link: '/guide/performance' },
+            { text: 'Linear Regression Performance', link: '/guide/linear-regression-performance' },
+            { text: 'Histogram Binning Strategies', link: '/guide/histogram-binning' },
             { text: 'Tree-Shaking', link: '/guide/tree-shaking' },
             { text: 'Browser Support', link: '/guide/browser-support' }
           ]
@@ -91,6 +93,15 @@ export default defineConfig({
                 { text: 'percentile', link: '/api/functions/percentile/' },
                 { text: 'quartiles', link: '/api/functions/quartiles/' },
                 { text: 'iqr', link: '/api/functions/iqr/' }
+              ]
+            },
+            { 
+              text: 'Weighted Quantiles',
+              collapsed: true,
+              items: [
+                { text: 'weightedPercentile', link: '/api/functions/weightedPercentile/' },
+                { text: 'weightedQuantiles', link: '/api/functions/weightedQuantiles/' },
+                { text: 'weightedMedian', link: '/api/functions/weightedMedian/' }
               ]
             },
             { text: 'All Functions', link: '/api/functions/' }
