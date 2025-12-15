@@ -9,25 +9,10 @@ describe('gamma - jstat compatibility', () => {
     await init();
   });
 
-  it('check pdf', async () => {
-    await init();
+  it.skip('check pdf (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check inv (skipped: test needs manual conversion)', async () => {});
 
 });

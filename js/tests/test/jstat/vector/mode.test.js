@@ -29,32 +29,12 @@ describe('mode - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('mode matrix cols', async () => {
-    await init();
+  it.skip('mode matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('mode callback (skipped: test needs manual conversion)', async () => {});
 
-  it('mode callback', async () => {
-    await init();
+  it.skip('mode matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('mode matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('mode matrix cols with true returns the "mode of the matrix"', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('mode matrix cols with true returns the "mode of the matrix" (skipped: matrix operations not implemented)', async () => {});
 
 });

@@ -29,12 +29,7 @@ describe('deviation - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('deviation matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('deviation matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('return deviation with equal numbers', async () => {
     await init();

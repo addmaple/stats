@@ -29,25 +29,10 @@ describe('meddev - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('meddev matrix cols', async () => {
-    await init();
+  it.skip('meddev matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('meddev callback (skipped: test needs manual conversion)', async () => {});
 
-  it('meddev callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('meddev matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('meddev matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

@@ -9,130 +9,40 @@ describe('triangular - jstat compatibility', () => {
     await init();
   });
 
-  it('check pdf calculation, when a < c < b', async () => {
-    await init();
+  it.skip('check pdf calculation, when a < c < b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check pdf calculation, when a = c < b (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation, when a = c < b', async () => {
-    await init();
+  it.skip('check pdf calculation, when a < c = b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check pdf calculation, when c < a (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation, when a < c = b', async () => {
-    await init();
+  it.skip('check pdf calculation, when b < c (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check pdf calculation, when a = b (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation, when c < a', async () => {
-    await init();
+  it.skip('check cdf calculation, when a < c < b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf calculation, when a = c < b (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation, when b < c', async () => {
-    await init();
+  it.skip('check cdf calculation, when a < c = b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf calculation, when c < a (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation, when a = b', async () => {
-    await init();
+  it.skip('check cdf calculation, when b < c (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf calculation, when a = b (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf calculation, when a < c < b', async () => {
-    await init();
+  it.skip('check inv calculation, when a < c < b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check inv calculation, when a = c < b (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf calculation, when a = c < b', async () => {
-    await init();
+  it.skip('check inv calculation, when a < c = b (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check inv calculation, when c < a (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf calculation, when a < c = b', async () => {
-    await init();
+  it.skip('check inv calculation, when b < c (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check cdf calculation, when c < a', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check cdf calculation, when b < c', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check cdf calculation, when a = b', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when a < c < b', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when a = c < b', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when a < c = b', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when c < a', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when b < c', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation, when a = b', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check inv calculation, when a = b (skipped: test needs manual conversion)', async () => {});
 
 });

@@ -29,39 +29,14 @@ describe('max - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('max matrix cols', async () => {
-    await init();
+  it.skip('max matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('max full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('max full matrix', async () => {
-    await init();
+  it.skip('max callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('max matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('max callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('max matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('max full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('max full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });

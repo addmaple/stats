@@ -70,11 +70,6 @@ describe('percentileOfScore - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('percentile of score matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('percentile of score matrix cols (skipped: matrix operations not implemented)', async () => {});
 
 });

@@ -9,32 +9,12 @@ describe('studentT - jstat compatibility', () => {
     await init();
   });
 
-  it('check pdf calculation', async () => {
-    await init();
+  it.skip('check pdf calculation (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check pdf calculation for large parameters (skipped: test needs manual conversion)', async () => {});
 
-  it('check pdf calculation for large parameters', async () => {
-    await init();
+  it.skip('check cdf calculation (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check cdf calculation', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check inv calculation', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check inv calculation (skipped: test needs manual conversion)', async () => {});
 
 });

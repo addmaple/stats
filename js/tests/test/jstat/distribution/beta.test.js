@@ -9,18 +9,8 @@ describe('beta - jstat compatibility', () => {
     await init();
   });
 
-  it('check mode calculation', async () => {
-    await init();
+  it.skip('check mode calculation (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('check median calculation', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check median calculation (skipped: test needs manual conversion)', async () => {});
 
 });

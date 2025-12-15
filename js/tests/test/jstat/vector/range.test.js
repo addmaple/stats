@@ -29,25 +29,10 @@ describe('range - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('range matrix cols', async () => {
-    await init();
+  it.skip('range matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('range callback (skipped: test needs manual conversion)', async () => {});
 
-  it('range callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('range matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('range matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

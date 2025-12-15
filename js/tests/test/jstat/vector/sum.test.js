@@ -29,39 +29,14 @@ describe('sum - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('sum matrix cols', async () => {
-    await init();
+  it.skip('sum matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('sum full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('sum full matrix', async () => {
-    await init();
+  it.skip('sum callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('sum matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('sum callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('sum matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('sum full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('sum full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });

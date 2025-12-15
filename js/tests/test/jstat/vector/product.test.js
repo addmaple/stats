@@ -29,39 +29,14 @@ describe('product - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('product matrix cols', async () => {
-    await init();
+  it.skip('product matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('product full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('product full matrix', async () => {
-    await init();
+  it.skip('product callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('product matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('product callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('product matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('product full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('product full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });

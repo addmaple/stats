@@ -29,39 +29,14 @@ describe('min - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('min matrix cols', async () => {
-    await init();
+  it.skip('min matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('min full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('min full matrix', async () => {
-    await init();
+  it.skip('min callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('min matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('min callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('min matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('min full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('min full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });

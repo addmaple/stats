@@ -39,25 +39,10 @@ describe('stdev - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('stdev matrix cols', async () => {
-    await init();
+  it.skip('stdev matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('stdev callback (skipped: test needs manual conversion)', async () => {});
 
-  it('stdev callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('stdev matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('stdev matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

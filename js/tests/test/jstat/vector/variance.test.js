@@ -39,25 +39,10 @@ describe('variance - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('variance matrix cols', async () => {
-    await init();
+  it.skip('variance matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('variance callback (skipped: test needs manual conversion)', async () => {});
 
-  it('variance callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('variance matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('variance matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

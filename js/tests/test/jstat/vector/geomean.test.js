@@ -31,39 +31,14 @@ describe('geomean - jstat compatibility', () => {
       `Expected ~${jstatResult}, got ${ourResult}`);
   });
 
-  it('geomean matrix cols', async () => {
-    await init();
+  it.skip('geomean matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('geomean full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('geomean full matrix', async () => {
-    await init();
+  it.skip('geomean callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('geomean matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('geomean callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('geomean matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('geomean full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('geomean full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
