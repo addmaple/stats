@@ -119,11 +119,41 @@ console.log(corrcoeff(x, y)); // 1.0
 
 This library uses SIMD-optimized Rust code compiled to WebAssembly, delivering exceptional performance compared to pure JavaScript implementations.
 
+### Optimal Input Types
+
+For best performance, pass data as `Float64Array` or plain `Array<number>`:
+
+```javascript
+// Fastest - Float64Array (zero-copy to WASM memory)
+const data = new Float64Array([1, 2, 3, 4, 5]);
+const m = mean(data);
+
+// Fast - plain Array<number>
+const data2 = [1, 2, 3, 4, 5];
+const m2 = mean(data2);
+
+// Slower - other ArrayLike types may use a fallback loop
+const data3 = new Uint8Array([1, 2, 3, 4, 5]);
+const m3 = mean(data3); // Works, but slower
+```
+
+### SIMD Requirement
+
+This library requires WebAssembly SIMD support. All modern browsers and Node.js 18+ support SIMD. If SIMD is not available, `init()` will throw an error with a clear message.
+
 ## Browser Support
 
-Works in all modern browsers that support WebAssembly. For Node.js, requires Node.js 18+.
+Works in all modern browsers that support WebAssembly SIMD:
+- Chrome 91+
+- Firefox 89+
+- Safari 16.4+
+- Edge 91+
+- Node.js 18+
 
 ## License
 
 MIT
+
+
+
 
