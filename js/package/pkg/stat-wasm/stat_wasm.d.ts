@@ -28,6 +28,14 @@ export class ChiSquareResult {
   readonly df: number;
 }
 
+export class HistogramWithEdges {
+  private constructor();
+  free(): void;
+  [Symbol.dispose](): void;
+  readonly edges: ArrayResult;
+  readonly counts: ArrayResult;
+}
+
 export class QuartilesResult {
   private constructor();
   free(): void;
@@ -35,6 +43,24 @@ export class QuartilesResult {
   readonly q1: number;
   readonly q2: number;
   readonly q3: number;
+}
+
+export class RegressionCoeffs {
+  private constructor();
+  free(): void;
+  [Symbol.dispose](): void;
+  readonly slope: number;
+  readonly intercept: number;
+  readonly r_squared: number;
+}
+
+export class RegressionCoeffsF32 {
+  private constructor();
+  free(): void;
+  [Symbol.dispose](): void;
+  readonly slope: number;
+  readonly intercept: number;
+  readonly r_squared: number;
 }
 
 export class RegressionResult {
@@ -55,6 +81,8 @@ export class TestResult {
   readonly p_value: number;
   readonly df: number | undefined;
 }
+
+export function alloc_f32(len: number): number;
 
 export function alloc_f64(len: number): number;
 
@@ -120,7 +148,7 @@ export function chi_square_test(cat1: string[], cat2: string[]): ChiSquareResult
 
 /**
  * Chi-square test with optional cardinality hints for optimization
- * 
+ *
  * If cardinality1 and cardinality2 are provided (number of unique categories),
  * uses a faster array-based algorithm.
  */
@@ -170,6 +198,8 @@ export function fisher_f_pdf_inplace(input_ptr: number, len: number, df1: number
 
 export function fisher_f_pdf_scalar(x: number, df1: number, df2: number): number;
 
+export function free_f32(ptr: number, len: number): void;
+
 export function free_f64(ptr: number, len: number): void;
 
 export function gamma_cdf_inplace(input_ptr: number, len: number, shape: number, rate: number, output_ptr: number): void;
@@ -186,9 +216,40 @@ export function geomean_f64(ptr: number, len: number): number;
 
 export function get_memory(): any;
 
+/**
+ * Calculate histogram with automatic binning and tail collapse, returning edges and counts.
+ * rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+ * bins_override: 0 means use rule's default, otherwise override
+ * k: IQR multiplier for outlier detection (typically 1.5)
+ */
+export function histogram_auto_with_edges_collapse_tails_f64(ptr: number, len: number, rule: number, bins_override: number, k: number): HistogramWithEdges;
+
+/**
+ * Calculate histogram with automatic binning, returning edges and counts.
+ * rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+ * bins_override: 0 means use rule's default, otherwise override
+ */
+export function histogram_auto_with_edges_f64(ptr: number, len: number, rule: number, bins_override: number): HistogramWithEdges;
+
+/**
+ * Calculate histogram with custom edges, returning edges and counts.
+ * clamp_outside: if true, values outside edges are clamped to first/last bin
+ */
+export function histogram_custom_with_edges_f64(data_ptr: number, data_len: number, edges_ptr: number, edges_len: number, clamp_outside: boolean): HistogramWithEdges;
+
 export function histogram_edges_f64(data_ptr: number, data_len: number, edges_ptr: number, edges_len: number): ArrayResult;
 
+/**
+ * Calculate histogram with equal-frequency binning, returning edges and counts.
+ */
+export function histogram_equal_frequency_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdges;
+
 export function histogram_f64(ptr: number, len: number, bin_count: number): ArrayResult;
+
+/**
+ * Calculate histogram with fixed-width binning, returning edges and counts.
+ */
+export function histogram_fixed_width_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdges;
 
 export function invgamma_cdf_inplace(input_ptr: number, len: number, shape: number, rate: number, output_ptr: number): void;
 
@@ -308,7 +369,31 @@ export function range_f64(ptr: number, len: number): number;
 
 export function rank_f64(ptr: number, len: number): ArrayResult;
 
+export function regress_coeffs_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionCoeffs;
+
 export function regress_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionResult;
+
+export function regress_naive_coeffs_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionCoeffs;
+
+export function regress_naive_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionResult;
+
+export function regress_naive_residuals_inplace_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number, residuals_out_ptr: number): RegressionCoeffs;
+
+export function regress_simd_coeffs_f32(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionCoeffsF32;
+
+export function regress_simd_coeffs_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionCoeffs;
+
+export function regress_simd_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionResult;
+
+export function regress_simd_residuals_inplace_f32(x_ptr: number, x_len: number, y_ptr: number, y_len: number, residuals_out_ptr: number): RegressionCoeffsF32;
+
+export function regress_simd_residuals_inplace_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number, residuals_out_ptr: number): RegressionCoeffs;
+
+export function regress_wasm_kernels_coeffs_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionCoeffs;
+
+export function regress_wasm_kernels_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number): RegressionResult;
+
+export function regress_wasm_kernels_residuals_inplace_f64(x_ptr: number, x_len: number, y_ptr: number, y_len: number, residuals_out_ptr: number): RegressionCoeffs;
 
 export function sample_stdev_f64(ptr: number, len: number): number;
 

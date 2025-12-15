@@ -148,9 +148,21 @@ const ChiSquareResultFinalization = (typeof FinalizationRegistry === 'undefined'
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_chisquareresult_free(ptr >>> 0, 1));
 
+const HistogramWithEdgesFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_histogramwithedges_free(ptr >>> 0, 1));
+
 const QuartilesResultFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_quartilesresult_free(ptr >>> 0, 1));
+
+const RegressionCoeffsFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_regressioncoeffs_free(ptr >>> 0, 1));
+
+const RegressionCoeffsF32Finalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_regressioncoeffsf32_free(ptr >>> 0, 1));
 
 const RegressionResultFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
@@ -293,6 +305,44 @@ export class ChiSquareResult {
 if (Symbol.dispose) ChiSquareResult.prototype[Symbol.dispose] = ChiSquareResult.prototype.free;
 
 /**
+ * Histogram result with edges and counts
+ */
+export class HistogramWithEdges {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(HistogramWithEdges.prototype);
+        obj.__wbg_ptr = ptr;
+        HistogramWithEdgesFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        HistogramWithEdgesFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_histogramwithedges_free(ptr, 0);
+    }
+    /**
+     * @returns {ArrayResult}
+     */
+    get edges() {
+        const ret = wasm.histogramwithedges_edges(this.__wbg_ptr);
+        return ArrayResult.__wrap(ret);
+    }
+    /**
+     * @returns {ArrayResult}
+     */
+    get counts() {
+        const ret = wasm.histogramwithedges_counts(this.__wbg_ptr);
+        return ArrayResult.__wrap(ret);
+    }
+}
+if (Symbol.dispose) HistogramWithEdges.prototype[Symbol.dispose] = HistogramWithEdges.prototype.free;
+
+/**
  * Quartiles result struct for JS
  */
 export class QuartilesResult {
@@ -336,6 +386,90 @@ export class QuartilesResult {
     }
 }
 if (Symbol.dispose) QuartilesResult.prototype[Symbol.dispose] = QuartilesResult.prototype.free;
+
+export class RegressionCoeffs {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(RegressionCoeffs.prototype);
+        obj.__wbg_ptr = ptr;
+        RegressionCoeffsFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        RegressionCoeffsFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_regressioncoeffs_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get slope() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get intercept() {
+        const ret = wasm.chisquareresult_p_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get r_squared() {
+        const ret = wasm.quartilesresult_q3(this.__wbg_ptr);
+        return ret;
+    }
+}
+if (Symbol.dispose) RegressionCoeffs.prototype[Symbol.dispose] = RegressionCoeffs.prototype.free;
+
+export class RegressionCoeffsF32 {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(RegressionCoeffsF32.prototype);
+        obj.__wbg_ptr = ptr;
+        RegressionCoeffsF32Finalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        RegressionCoeffsF32Finalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_regressioncoeffsf32_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get slope() {
+        const ret = wasm.regressioncoeffsf32_slope(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get intercept() {
+        const ret = wasm.regressioncoeffsf32_intercept(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get r_squared() {
+        const ret = wasm.regressioncoeffsf32_r_squared(this.__wbg_ptr);
+        return ret;
+    }
+}
+if (Symbol.dispose) RegressionCoeffsF32.prototype[Symbol.dispose] = RegressionCoeffsF32.prototype.free;
 
 export class RegressionResult {
     static __wrap(ptr) {
@@ -427,6 +561,15 @@ export class TestResult {
     }
 }
 if (Symbol.dispose) TestResult.prototype[Symbol.dispose] = TestResult.prototype.free;
+
+/**
+ * @param {number} len
+ * @returns {number}
+ */
+export function alloc_f32(len) {
+    const ret = wasm.alloc_f32(len);
+    return ret >>> 0;
+}
 
 /**
  * @param {number} len
@@ -1019,6 +1162,14 @@ export function fisher_f_pdf_scalar(x, df1, df2) {
  * @param {number} ptr
  * @param {number} len
  */
+export function free_f32(ptr, len) {
+    wasm.free_f32(ptr, len);
+}
+
+/**
+ * @param {number} ptr
+ * @param {number} len
+ */
 export function free_f64(ptr, len) {
     wasm.free_f64(ptr, len);
 }
@@ -1112,6 +1263,53 @@ export function get_memory() {
 }
 
 /**
+ * Calculate histogram with automatic binning and tail collapse, returning edges and counts.
+ * rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+ * bins_override: 0 means use rule's default, otherwise override
+ * k: IQR multiplier for outlier detection (typically 1.5)
+ * @param {number} ptr
+ * @param {number} len
+ * @param {number} rule
+ * @param {number} bins_override
+ * @param {number} k
+ * @returns {HistogramWithEdges}
+ */
+export function histogram_auto_with_edges_collapse_tails_f64(ptr, len, rule, bins_override, k) {
+    const ret = wasm.histogram_auto_with_edges_collapse_tails_f64(ptr, len, rule, bins_override, k);
+    return HistogramWithEdges.__wrap(ret);
+}
+
+/**
+ * Calculate histogram with automatic binning, returning edges and counts.
+ * rule: 0 = FreedmanDiaconis, 1 = Scott, 2 = SqrtN
+ * bins_override: 0 means use rule's default, otherwise override
+ * @param {number} ptr
+ * @param {number} len
+ * @param {number} rule
+ * @param {number} bins_override
+ * @returns {HistogramWithEdges}
+ */
+export function histogram_auto_with_edges_f64(ptr, len, rule, bins_override) {
+    const ret = wasm.histogram_auto_with_edges_f64(ptr, len, rule, bins_override);
+    return HistogramWithEdges.__wrap(ret);
+}
+
+/**
+ * Calculate histogram with custom edges, returning edges and counts.
+ * clamp_outside: if true, values outside edges are clamped to first/last bin
+ * @param {number} data_ptr
+ * @param {number} data_len
+ * @param {number} edges_ptr
+ * @param {number} edges_len
+ * @param {boolean} clamp_outside
+ * @returns {HistogramWithEdges}
+ */
+export function histogram_custom_with_edges_f64(data_ptr, data_len, edges_ptr, edges_len, clamp_outside) {
+    const ret = wasm.histogram_custom_with_edges_f64(data_ptr, data_len, edges_ptr, edges_len, clamp_outside);
+    return HistogramWithEdges.__wrap(ret);
+}
+
+/**
  * @param {number} data_ptr
  * @param {number} data_len
  * @param {number} edges_ptr
@@ -1124,6 +1322,18 @@ export function histogram_edges_f64(data_ptr, data_len, edges_ptr, edges_len) {
 }
 
 /**
+ * Calculate histogram with equal-frequency binning, returning edges and counts.
+ * @param {number} ptr
+ * @param {number} len
+ * @param {number} bins
+ * @returns {HistogramWithEdges}
+ */
+export function histogram_equal_frequency_with_edges_f64(ptr, len, bins) {
+    const ret = wasm.histogram_equal_frequency_with_edges_f64(ptr, len, bins);
+    return HistogramWithEdges.__wrap(ret);
+}
+
+/**
  * @param {number} ptr
  * @param {number} len
  * @param {number} bin_count
@@ -1132,6 +1342,18 @@ export function histogram_edges_f64(data_ptr, data_len, edges_ptr, edges_len) {
 export function histogram_f64(ptr, len, bin_count) {
     const ret = wasm.histogram_f64(ptr, len, bin_count);
     return ArrayResult.__wrap(ret);
+}
+
+/**
+ * Calculate histogram with fixed-width binning, returning edges and counts.
+ * @param {number} ptr
+ * @param {number} len
+ * @param {number} bins
+ * @returns {HistogramWithEdges}
+ */
+export function histogram_fixed_width_with_edges_f64(ptr, len, bins) {
+    const ret = wasm.histogram_fixed_width_with_edges_f64(ptr, len, bins);
+    return HistogramWithEdges.__wrap(ret);
 }
 
 /**
@@ -1884,11 +2106,159 @@ export function rank_f64(ptr, len) {
  * @param {number} x_len
  * @param {number} y_ptr
  * @param {number} y_len
+ * @returns {RegressionCoeffs}
+ */
+export function regress_coeffs_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_coeffs_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
  * @returns {RegressionResult}
  */
 export function regress_f64(x_ptr, x_len, y_ptr, y_len) {
     const ret = wasm.regress_f64(x_ptr, x_len, y_ptr, y_len);
     return RegressionResult.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionCoeffs}
+ */
+export function regress_naive_coeffs_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_naive_coeffs_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionResult}
+ */
+export function regress_naive_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_naive_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionResult.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @param {number} residuals_out_ptr
+ * @returns {RegressionCoeffs}
+ */
+export function regress_naive_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr) {
+    const ret = wasm.regress_naive_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionCoeffsF32}
+ */
+export function regress_simd_coeffs_f32(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_simd_coeffs_f32(x_ptr, x_len, y_ptr, y_len);
+    return RegressionCoeffsF32.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionCoeffs}
+ */
+export function regress_simd_coeffs_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_coeffs_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionResult}
+ */
+export function regress_simd_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_simd_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionResult.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @param {number} residuals_out_ptr
+ * @returns {RegressionCoeffsF32}
+ */
+export function regress_simd_residuals_inplace_f32(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr) {
+    const ret = wasm.regress_simd_residuals_inplace_f32(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr);
+    return RegressionCoeffsF32.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @param {number} residuals_out_ptr
+ * @returns {RegressionCoeffs}
+ */
+export function regress_simd_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr) {
+    const ret = wasm.regress_simd_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionCoeffs}
+ */
+export function regress_wasm_kernels_coeffs_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_wasm_kernels_coeffs_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionCoeffs.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @returns {RegressionResult}
+ */
+export function regress_wasm_kernels_f64(x_ptr, x_len, y_ptr, y_len) {
+    const ret = wasm.regress_wasm_kernels_f64(x_ptr, x_len, y_ptr, y_len);
+    return RegressionResult.__wrap(ret);
+}
+
+/**
+ * @param {number} x_ptr
+ * @param {number} x_len
+ * @param {number} y_ptr
+ * @param {number} y_len
+ * @param {number} residuals_out_ptr
+ * @returns {RegressionCoeffs}
+ */
+export function regress_wasm_kernels_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr) {
+    const ret = wasm.regress_wasm_kernels_residuals_inplace_f64(x_ptr, x_len, y_ptr, y_len, residuals_out_ptr);
+    return RegressionCoeffs.__wrap(ret);
 }
 
 /**
