@@ -32,6 +32,14 @@ import {
   ttest,
   ztest,
   regress,
+  regressNaive,
+  regressSimd,
+  regressWasmKernels,
+  regressNaiveCoeffs,
+  regressSimdCoeffs,
+  regressWasmKernelsCoeffs,
+  RegressionWorkspace,
+  RegressionWorkspaceF32,
   normalci,
   tci,
   chiSquareTest,
@@ -46,6 +54,7 @@ import {
   cumreduce,
 } from '@stats/core';
 import jStat from 'jstat';
+import fs from 'fs';
 
 // Benchmark function
 function benchmark(name, fn, iterations = 1000) {
@@ -529,6 +538,107 @@ async function runBenchmarks() {
     const rSquared = 1 - (ssRes / ssTot);
     return { slope, intercept, r_squared: rSquared, residuals: new Float64Array(residuals) };
   }, 200));
+
+  // Regression variants comparison with diabetes dataset (10K points)
+  console.log('\n--- Regression Variants Comparison (Diabetes Dataset, 10K points) ---');
+  try {
+    const csvPath = '../../data/diabetes-prediction.csv';
+    const csvContent = fs.readFileSync(csvPath, 'utf8');
+    const lines = csvContent.split(/\r?\n/);
+    const diabetesX = [];
+    const diabetesY = [];
+    
+    // Skip header, load first 10k rows: x=age (col 1), y=bmi (col 5)
+    for (let i = 1; i < lines.length && diabetesX.length < 10000; i++) {
+      const parts = lines[i].split(',');
+      if (parts.length >= 7) {
+        const age = parseFloat(parts[1]);
+        const bmi = parseFloat(parts[5]);
+        if (!isNaN(age) && !isNaN(bmi)) {
+          diabetesX.push(age);
+          diabetesY.push(bmi);
+        }
+      }
+    }
+    
+    if (diabetesX.length === 10000) {
+      console.log(compareInternal('regress_naive (10K diabetes)', 
+        () => regressNaive(diabetesX, diabetesY),
+        () => regressSimd(diabetesX, diabetesY),
+        100
+      ));
+      console.log(compareInternal('regress_simd (10K diabetes)', 
+        () => regressSimd(diabetesX, diabetesY),
+        () => regressWasmKernels(diabetesX, diabetesY),
+        100
+      ));
+      console.log(compareInternal('regress_wasm_kernels (10K diabetes)', 
+        () => regressWasmKernels(diabetesX, diabetesY),
+        () => regressNaive(diabetesX, diabetesY),
+        100
+      ));
+      
+      // Also compare all three against each other
+      const naiveTime = benchmark('regress_naive (10K)', () => regressNaive(diabetesX, diabetesY), 100).avg;
+      const simdTime = benchmark('regress_simd (10K)', () => regressSimd(diabetesX, diabetesY), 100).avg;
+      const kernelsTime = benchmark('regress_wasm_kernels (10K)', () => regressWasmKernels(diabetesX, diabetesY), 100).avg;
+      
+      console.log(`\nSummary (10K diabetes dataset):`);
+      console.log(`  naive:    ${(naiveTime * 1000).toFixed(2).padStart(8)}µs`);
+      console.log(`  simd:     ${(simdTime * 1000).toFixed(2).padStart(8)}µs  (${(naiveTime/simdTime).toFixed(2)}x faster than naive)`);
+      console.log(`  kernels:  ${(kernelsTime * 1000).toFixed(2).padStart(8)}µs  (${(naiveTime/kernelsTime).toFixed(2)}x faster than naive)`);
+
+      // Coefficients-only (no residual allocation/copy)
+      console.log('\n--- Regression Coefficients-Only (no residuals) ---');
+      const naiveCoeffsTime = benchmark('regressNaiveCoeffs (10K)', () => regressNaiveCoeffs(diabetesX, diabetesY), 300).avg;
+      const simdCoeffsTime = benchmark('regressSimdCoeffs (10K)', () => regressSimdCoeffs(diabetesX, diabetesY), 300).avg;
+      const kernelsCoeffsTime = benchmark('regressWasmKernelsCoeffs (10K)', () => regressWasmKernelsCoeffs(diabetesX, diabetesY), 300).avg;
+      console.log(`  naiveCoeffs:   ${(naiveCoeffsTime * 1000).toFixed(2).padStart(8)}µs`);
+      console.log(`  simdCoeffs:    ${(simdCoeffsTime * 1000).toFixed(2).padStart(8)}µs  (${(naiveCoeffsTime/simdCoeffsTime).toFixed(2)}x faster than naiveCoeffs)`);
+      console.log(`  kernelsCoeffs: ${(kernelsCoeffsTime * 1000).toFixed(2).padStart(8)}µs  (${(naiveCoeffsTime/kernelsCoeffsTime).toFixed(2)}x faster than naiveCoeffs)`);
+
+      // Workspace / no-copy benchmarks (fastest possible WASM-side compute)
+      console.log('\n--- Regression Workspace (no per-iteration alloc/copy) ---');
+      const ws = RegressionWorkspace.fromXY(diabetesX, diabetesY, false);
+      const wsCoeffsNaive = benchmark('ws.coeffsNaive (10K)', () => ws.coeffsNaive(), 5000).avg;
+      const wsCoeffsSimd = benchmark('ws.coeffsSimd (10K)', () => ws.coeffsSimd(), 5000).avg;
+      const wsCoeffsKernels = benchmark('ws.coeffsKernels (10K)', () => ws.coeffsKernels(), 5000).avg;
+      ws.free();
+      console.log(`  wsNaiveCoeffs:   ${(wsCoeffsNaive * 1000).toFixed(2).padStart(8)}µs`);
+      console.log(`  wsSimdCoeffs:    ${(wsCoeffsSimd * 1000).toFixed(2).padStart(8)}µs  (${(wsCoeffsNaive/wsCoeffsSimd).toFixed(2)}x faster than wsNaiveCoeffs)`);
+      console.log(`  wsKernelsCoeffs: ${(wsCoeffsKernels * 1000).toFixed(2).padStart(8)}µs  (${(wsCoeffsNaive/wsCoeffsKernels).toFixed(2)}x faster than wsNaiveCoeffs)`);
+
+      // Workspace residuals-in-place (compute residuals but don't copy out)
+      console.log('\n--- Regression Workspace Residuals-In-Place (no JS copy) ---');
+      const wsR = RegressionWorkspace.fromXY(diabetesX, diabetesY, true);
+      const wsResNaive = benchmark('ws.residualsInPlaceNaive (10K)', () => wsR.residualsInPlaceNaive(), 1000).avg;
+      const wsResSimd = benchmark('ws.residualsInPlaceSimd (10K)', () => wsR.residualsInPlaceSimd(), 1000).avg;
+      const wsResKernels = benchmark('ws.residualsInPlaceKernels (10K)', () => wsR.residualsInPlaceKernels(), 1000).avg;
+      wsR.free();
+      console.log(`  wsNaiveResiduals:   ${(wsResNaive * 1000).toFixed(2).padStart(8)}µs`);
+      console.log(`  wsSimdResiduals:    ${(wsResSimd * 1000).toFixed(2).padStart(8)}µs  (${(wsResNaive/wsResSimd).toFixed(2)}x faster than wsNaiveResiduals)`);
+      console.log(`  wsKernelsResiduals: ${(wsResKernels * 1000).toFixed(2).padStart(8)}µs  (${(wsResNaive/wsResKernels).toFixed(2)}x faster than wsNaiveResiduals)`);
+
+      // f32 workspace (wasm32 SIMD f32x4)
+      console.log('\n--- Regression Workspace F32 (SIMD f32x4, no per-iteration alloc/copy) ---');
+      const diabetesXF32 = new Float32Array(diabetesX);
+      const diabetesYF32 = new Float32Array(diabetesY);
+      const wsF32 = RegressionWorkspaceF32.fromXY(diabetesXF32, diabetesYF32, false);
+      const wsF32CoeffsSimd = benchmark('wsF32.coeffsSimd (10K)', () => wsF32.coeffsSimd(), 8000).avg;
+      wsF32.free();
+      console.log(`  wsF32SimdCoeffs: ${(wsF32CoeffsSimd * 1000).toFixed(2).padStart(8)}µs`);
+
+      console.log('\n--- Regression Workspace F32 Residuals-In-Place (no JS copy) ---');
+      const wsF32R = RegressionWorkspaceF32.fromXY(diabetesXF32, diabetesYF32, true);
+      const wsF32ResSimd = benchmark('wsF32.residualsInPlaceSimd (10K)', () => wsF32R.residualsInPlaceSimd(), 2000).avg;
+      wsF32R.free();
+      console.log(`  wsF32SimdResiduals: ${(wsF32ResSimd * 1000).toFixed(2).padStart(8)}µs`);
+    } else {
+      console.log(`Warning: Could not load full 10K dataset (got ${diabetesX.length} rows)`);
+    }
+  } catch (err) {
+    console.log(`Warning: Could not load diabetes dataset: ${err.message}`);
+  }
 
   console.log('\n--- Confidence Intervals ---');
   // normalci
