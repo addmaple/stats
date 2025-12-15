@@ -12,3 +12,6 @@ wasm-pack build --target bundler --out-dir pkg
 
 echo "Build complete! Output in crates/stat-wasm/pkg/"
 
+
+
+
