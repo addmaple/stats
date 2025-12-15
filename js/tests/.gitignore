@@ -1,3 +1,9 @@
 node_modules/
 *.log
+coverage/
+.nodehelp.txt
+.v8-coverage/
+
+
+
 

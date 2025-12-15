@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test test/**/*.test.js",
-    "test:jstat": "node --test test/jstat/**/*.test.js",
-    "test:watch": "node --test --watch test/**/*.test.js",
-    "convert-tests": "node scripts/convert-all-tests.js"
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:jstat": "node --test \"test/jstat/**/*.test.js\"",
+    "test:watch": "node --test --watch \"test/**/*.test.js\"",
+    "convert-tests": "node scripts/convert-all-tests.js",
+    "fix-placeholders": "node scripts/convert-placeholders-to-skips.js",
+    "coverage": "npm run coverage:v8",
+    "coverage:core": "npm run coverage:v8:core",
+    "coverage:v8": "node scripts/coverage-v8.js \"test/**/*.test.js\"",
+    "coverage:v8:core": "node scripts/coverage-v8.js \"test/core/**/*.test.js\""
   },
   "dependencies": {
     "@stats/core": "file:../package",
@@ -19,4 +24,3 @@
     "@types/node": "^20.0.0"
   }
 }
-
