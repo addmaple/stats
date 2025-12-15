@@ -42,3 +42,9 @@ export function percentile_of_score_f64(ptr: number, len: number, score: number,
 export function quantiles_f64(data_ptr: number, data_len: number, qs_ptr: number, qs_len: number): ArrayResult;
 
 export function quartiles_f64(ptr: number, len: number): QuartilesResult;
+
+export function weighted_median_f64(data_ptr: number, data_len: number, weights_ptr: number, weights_len: number): number;
+
+export function weighted_percentile_f64(data_ptr: number, data_len: number, weights_ptr: number, weights_len: number, p: number): number;
+
+export function weighted_quantiles_f64(data_ptr: number, data_len: number, weights_ptr: number, weights_len: number, qs_ptr: number, qs_len: number): ArrayResult;

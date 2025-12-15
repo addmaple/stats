@@ -251,6 +251,45 @@ export function quartiles_f64(ptr, len) {
     return QuartilesResult.__wrap(ret);
 }
 
+/**
+ * @param {number} data_ptr
+ * @param {number} data_len
+ * @param {number} weights_ptr
+ * @param {number} weights_len
+ * @returns {number}
+ */
+export function weighted_median_f64(data_ptr, data_len, weights_ptr, weights_len) {
+    const ret = wasm.weighted_median_f64(data_ptr, data_len, weights_ptr, weights_len);
+    return ret;
+}
+
+/**
+ * @param {number} data_ptr
+ * @param {number} data_len
+ * @param {number} weights_ptr
+ * @param {number} weights_len
+ * @param {number} p
+ * @returns {number}
+ */
+export function weighted_percentile_f64(data_ptr, data_len, weights_ptr, weights_len, p) {
+    const ret = wasm.weighted_percentile_f64(data_ptr, data_len, weights_ptr, weights_len, p);
+    return ret;
+}
+
+/**
+ * @param {number} data_ptr
+ * @param {number} data_len
+ * @param {number} weights_ptr
+ * @param {number} weights_len
+ * @param {number} qs_ptr
+ * @param {number} qs_len
+ * @returns {ArrayResult}
+ */
+export function weighted_quantiles_f64(data_ptr, data_len, weights_ptr, weights_len, qs_ptr, qs_len) {
+    const ret = wasm.weighted_quantiles_f64(data_ptr, data_len, weights_ptr, weights_len, qs_ptr, qs_len);
+    return ArrayResult.__wrap(ret);
+}
+
 export function __wbg___wbindgen_memory_a342e963fbcabd68() {
     const ret = wasm.memory;
     return ret;
