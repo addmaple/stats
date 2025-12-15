@@ -231,6 +231,27 @@ export interface QuantilesWasmModule {
   quartiles_f64(ptr: number, len: number): QuartilesResult;
   iqr_f64(ptr: number, len: number): number;
   quantiles_f64(dataPtr: number, dataLen: number, qsPtr: number, qsLen: number): ArrayResult;
+  weighted_percentile_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number,
+    p: number
+  ): number;
+  weighted_quantiles_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number,
+    qsPtr: number,
+    qsLen: number
+  ): ArrayResult;
+  weighted_median_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number
+  ): number;
   histogram_f64(ptr: number, len: number, binCount: number): ArrayResult;
   histogram_edges_f64(dataPtr: number, dataLen: number, edgesPtr: number, edgesLen: number): ArrayResult;
 }
@@ -271,7 +292,16 @@ export interface TestsWasmModule {
 export interface FullWasmModule extends
   StatsWasmModule,
   Omit<DistributionsWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64'>,
-  Omit<QuantilesWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64' | 'histogram_f64'>,
+  Omit<
+    QuantilesWasmModule,
+    | 'get_memory'
+    | 'alloc_f64'
+    | 'free_f64'
+    | 'histogram_f64'
+    | 'weighted_percentile_f64'
+    | 'weighted_quantiles_f64'
+    | 'weighted_median_f64'
+  >,
   Omit<CorrelationWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64'>,
   Omit<TestsWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64'> {
   // Additional functions only in full module

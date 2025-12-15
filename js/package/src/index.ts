@@ -1,4 +1,5 @@
 import { simd } from 'wasm-feature-detect';
+import * as quantilesModule from './quantiles.js';
 
 interface ArrayResult {
   ptr: number;
@@ -555,6 +556,10 @@ export async function init(): Promise<void> {
   // Path is relative to dist/index.js location
   const mod = await import('../pkg/stat-wasm/stat_wasm.js');
   wasmModule = mod as unknown as WasmModule;
+
+  // Root-level API includes weighted quantiles; those live in the quantiles WASM module.
+  // Keep `await init()` working for `weightedQuantiles/weightedMedian/weightedPercentile`.
+  await quantilesModule.init();
 }
 
 /**
@@ -2267,29 +2272,7 @@ export function weightedPercentile(
   weights: ArrayLike<number>,
   p: number
 ): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
-
-  const dataLen = data.length;
-  const weightsLen = weights.length;
-
-  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
-    return NaN;
-  }
-
-  const dataPtr = wasmModule.alloc_f64(dataLen);
-  const weightsPtr = wasmModule.alloc_f64(weightsLen);
-  const dataView = f64View(dataPtr, dataLen);
-  const weightsView = f64View(weightsPtr, weightsLen);
-  copyToWasmMemory(data, dataView);
-  copyToWasmMemory(weights, weightsView);
-
-  const result = wasmModule.weighted_percentile_f64(dataPtr, dataLen, weightsPtr, weightsLen, p);
-  wasmModule.free_f64(dataPtr, dataLen);
-  wasmModule.free_f64(weightsPtr, weightsLen);
-
-  return result;
+  return quantilesModule.weightedPercentile(data, weights, p);
 }
 
 /**
@@ -2321,38 +2304,7 @@ export function weightedQuantiles(
   weights: ArrayLike<number>,
   qs: ArrayLike<number>
 ): Float64Array {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
-
-  const dataLen = data.length;
-  const weightsLen = weights.length;
-  const qsLen = qs.length;
-
-  if (dataLen === 0 || weightsLen === 0 || qsLen === 0 || dataLen !== weightsLen) {
-    return new Float64Array(qsLen).fill(NaN);
-  }
-
-  const dataPtr = wasmModule.alloc_f64(dataLen);
-  const weightsPtr = wasmModule.alloc_f64(weightsLen);
-  const qsPtr = wasmModule.alloc_f64(qsLen);
-  const dataView = f64View(dataPtr, dataLen);
-  const weightsView = f64View(weightsPtr, weightsLen);
-  const qsView = f64View(qsPtr, qsLen);
-  copyToWasmMemory(data, dataView);
-  copyToWasmMemory(weights, weightsView);
-  copyToWasmMemory(qs, qsView);
-
-  const result = wasmModule.weighted_quantiles_f64(
-    dataPtr, dataLen,
-    weightsPtr, weightsLen,
-    qsPtr, qsLen
-  );
-  wasmModule.free_f64(dataPtr, dataLen);
-  wasmModule.free_f64(weightsPtr, weightsLen);
-  wasmModule.free_f64(qsPtr, qsLen);
-
-  return readWasmArray(result);
+  return quantilesModule.weightedQuantiles(data, weights, qs);
 }
 
 /**
@@ -2382,29 +2334,7 @@ export function weightedMedian(
   data: ArrayLike<number>,
   weights: ArrayLike<number>
 ): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
-
-  const dataLen = data.length;
-  const weightsLen = weights.length;
-
-  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
-    return NaN;
-  }
-
-  const dataPtr = wasmModule.alloc_f64(dataLen);
-  const weightsPtr = wasmModule.alloc_f64(weightsLen);
-  const dataView = f64View(dataPtr, dataLen);
-  const weightsView = f64View(weightsPtr, weightsLen);
-  copyToWasmMemory(data, dataView);
-  copyToWasmMemory(weights, weightsView);
-
-  const result = wasmModule.weighted_median_f64(dataPtr, dataLen, weightsPtr, weightsLen);
-  wasmModule.free_f64(dataPtr, dataLen);
-  wasmModule.free_f64(weightsPtr, weightsLen);
-
-  return result;
+  return quantilesModule.weightedMedian(data, weights);
 }
 
 /**

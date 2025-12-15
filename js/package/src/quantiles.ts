@@ -137,6 +137,109 @@ export function quantiles(data: ArrayLike<number>, quantilesArr: ArrayLike<numbe
   return output;
 }
 
+// =============================================================================
+// Weighted Quantiles
+// =============================================================================
+
+export function weightedPercentile(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  p: number
+): number {
+  const wasm = requireWasm();
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
+    return NaN;
+  }
+
+  const dataPtr = wasm.alloc_f64(dataLen);
+  const weightsPtr = wasm.alloc_f64(weightsLen);
+  const dataView = f64View(dataPtr, dataLen, wasm.get_memory());
+  const weightsView = f64View(weightsPtr, weightsLen, wasm.get_memory());
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+
+  const result = wasm.weighted_percentile_f64(
+    dataPtr, dataLen,
+    weightsPtr, weightsLen,
+    p
+  );
+
+  wasm.free_f64(dataPtr, dataLen);
+  wasm.free_f64(weightsPtr, weightsLen);
+
+  return result;
+}
+
+export function weightedQuantiles(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  qs: ArrayLike<number>
+): Float64Array {
+  const wasm = requireWasm();
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+  const qsLen = qs.length;
+  if (dataLen === 0 || weightsLen === 0 || qsLen === 0 || dataLen !== weightsLen) {
+    return new Float64Array(qsLen).fill(NaN);
+  }
+
+  const dataPtr = wasm.alloc_f64(dataLen);
+  const weightsPtr = wasm.alloc_f64(weightsLen);
+  const qsPtr = wasm.alloc_f64(qsLen);
+
+  const dataView = f64View(dataPtr, dataLen, wasm.get_memory());
+  const weightsView = f64View(weightsPtr, weightsLen, wasm.get_memory());
+  const qsView = f64View(qsPtr, qsLen, wasm.get_memory());
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+  copyToWasmMemory(qs, qsView);
+
+  const result = wasm.weighted_quantiles_f64(
+    dataPtr, dataLen,
+    weightsPtr, weightsLen,
+    qsPtr, qsLen
+  );
+  const output = readWasmArray(result, wasm.get_memory());
+
+  wasm.free_f64(dataPtr, dataLen);
+  wasm.free_f64(weightsPtr, weightsLen);
+  wasm.free_f64(qsPtr, qsLen);
+  wasm.free_f64(result.ptr, result.len);
+
+  return output;
+}
+
+export function weightedMedian(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>
+): number {
+  const wasm = requireWasm();
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
+    return NaN;
+  }
+
+  const dataPtr = wasm.alloc_f64(dataLen);
+  const weightsPtr = wasm.alloc_f64(weightsLen);
+  const dataView = f64View(dataPtr, dataLen, wasm.get_memory());
+  const weightsView = f64View(weightsPtr, weightsLen, wasm.get_memory());
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+
+  const result = wasm.weighted_median_f64(
+    dataPtr, dataLen,
+    weightsPtr, weightsLen
+  );
+
+  wasm.free_f64(dataPtr, dataLen);
+  wasm.free_f64(weightsPtr, weightsLen);
+
+  return result;
+}
+
 export function histogram(data: ArrayLike<number>, binCount: number): Float64Array {
   const wasm = requireWasm();
   const len = data.length;
