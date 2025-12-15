@@ -1,6 +1,14 @@
 use statistical::univariate::geometric_mean as statistical_geometric_mean;
+#[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+use wide::f32x4;
 use wide::f64x4;
 use std::collections::HashMap;
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+use core::arch::wasm32::{
+    f32x4_add, f32x4_extract_lane, f32x4_mul, f32x4_splat, f32x4_sub, f64x2_add,
+    f64x2_extract_lane, f64x2_mul, f64x2_splat, f64x2_sub, v128, v128_load, v128_store,
+};
 
 // =============================================================================
 // SIMD Infrastructure
@@ -838,6 +846,376 @@ pub fn histogram_edges(data: &[f64], edges: &[f64]) -> Vec<usize> {
     bins
 }
 
+/// Calculate a histogram with custom bin edges, clamping values outside range.
+/// 
+/// Unlike `histogram_edges`, values < edges[0] are counted in the first bin,
+/// and values > edges[last] are counted in the last bin.
+/// 
+/// # Arguments
+/// * `data` - Input slice
+/// * `edges` - Bin edges (must be sorted, length = num_bins + 1)
+/// 
+/// # Returns
+/// Vector of counts per bin. Values outside the range are clamped to first/last bin.
+pub fn histogram_edges_clamped(data: &[f64], edges: &[f64]) -> Vec<usize> {
+    if edges.len() < 2 {
+        return vec![];
+    }
+    
+    let num_bins = edges.len() - 1;
+    let mut bins = vec![0usize; num_bins];
+    
+    let min_edge = edges[0];
+    let max_edge = edges[edges.len() - 1];
+    
+    for &value in data {
+        if value.is_nan() {
+            continue;
+        }
+        
+        // Clamp to first bin
+        if value <= min_edge {
+            bins[0] += 1;
+            continue;
+        }
+        
+        // Clamp to last bin
+        if value >= max_edge {
+            bins[num_bins - 1] += 1;
+            continue;
+        }
+        
+        // Find the bin using binary search for values within range
+        match edges.binary_search_by(|e| e.partial_cmp(&value).unwrap()) {
+            Ok(idx) => {
+                // Exact match on an edge
+                if idx == 0 {
+                    bins[0] += 1;
+                } else if idx < edges.len() - 1 {
+                    bins[idx] += 1;
+                } else {
+                    bins[num_bins - 1] += 1;
+                }
+            }
+            Err(idx) => {
+                // idx is where value would be inserted
+                if idx > 0 && idx <= num_bins {
+                    bins[idx - 1] += 1;
+                }
+            }
+        }
+    }
+    
+    bins
+}
+
+// =============================================================================
+// Advanced Binning Strategies
+// =============================================================================
+
+/// Binning rule for automatic binning strategies
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BinningRule {
+    /// Freedman-Diaconis rule: width = 2*IQR / n^(1/3)
+    FreedmanDiaconis,
+    /// Scott's rule: width = 3.5*stdev / n^(1/3)
+    Scott,
+    /// Square root rule: bins = ceil(sqrt(n))
+    SqrtN,
+}
+
+/// Calculate bin edges using fixed-width binning (linear spacing).
+/// 
+/// # Arguments
+/// * `data` - Input slice
+/// * `bins` - Number of bins
+/// 
+/// # Returns
+/// Vector of bin edges (length = bins + 1) from min to max
+pub fn bin_edges_fixed_width(data: &[f64], bins: usize) -> Vec<f64> {
+    if data.is_empty() || bins == 0 {
+        return vec![];
+    }
+    
+    let (min_val, max_val) = minmax(data);
+    
+    if min_val.is_nan() || max_val.is_nan() {
+        return vec![];
+    }
+    
+    let range = max_val - min_val;
+    
+    // Handle edge case where all values are the same
+    if range < f64::EPSILON {
+        let mut edges = vec![min_val; bins + 1];
+        edges[bins] = max_val;
+        return edges;
+    }
+    
+    let mut edges = Vec::with_capacity(bins + 1);
+    let bin_width = range / bins as f64;
+    
+    for i in 0..=bins {
+        edges.push(min_val + i as f64 * bin_width);
+    }
+    
+    edges
+}
+
+/// Calculate bin edges using equal-frequency (quantile) binning.
+/// 
+/// Each bin contains approximately the same number of observations.
+/// 
+/// # Arguments
+/// * `data` - Input slice
+/// * `bins` - Number of bins
+/// 
+/// # Returns
+/// Vector of bin edges (length = bins + 1) using quantiles
+pub fn bin_edges_equal_frequency(data: &[f64], bins: usize) -> Vec<f64> {
+    if data.is_empty() || bins == 0 {
+        return vec![];
+    }
+    
+    // Handle single value case
+    if data.len() == 1 {
+        let val = data[0];
+        return vec![val; bins + 1];
+    }
+    
+    // Build quantile points: 0, 1/bins, 2/bins, ..., 1.0
+    let mut quantile_points = Vec::with_capacity(bins + 1);
+    quantile_points.push(0.0);
+    
+    for i in 1..bins {
+        quantile_points.push(i as f64 / bins as f64);
+    }
+    quantile_points.push(1.0);
+    
+    // Get quantile values
+    let mut edges = quantiles(data, &quantile_points);
+    
+    // Ensure edges[0] = min and edges[last] = max for exact bounds
+    let (min_val, max_val) = minmax(data);
+    if !min_val.is_nan() {
+        edges[0] = min_val;
+    }
+    if !max_val.is_nan() {
+        edges[bins] = max_val;
+    }
+    
+    edges
+}
+
+/// Calculate bin edges using automatic binning strategy.
+/// 
+/// # Arguments
+/// * `data` - Input slice
+/// * `rule` - Binning rule to use
+/// * `bins_override` - Optional override for number of bins (for FD/Scott rules)
+/// 
+/// # Returns
+/// Vector of bin edges (length = bins + 1)
+pub fn bin_edges_auto(data: &[f64], rule: BinningRule, bins_override: Option<usize>) -> Vec<f64> {
+    if data.is_empty() {
+        return vec![];
+    }
+    
+    let n = data.len() as f64;
+    
+    let (min_val, max_val) = minmax(data);
+    if min_val.is_nan() || max_val.is_nan() {
+        return vec![];
+    }
+    
+    let range = max_val - min_val;
+    
+    // Handle edge case where all values are the same
+    if range < f64::EPSILON {
+        let bins = bins_override.unwrap_or(1);
+        let mut edges = vec![min_val; bins + 1];
+        edges[bins] = max_val;
+        return edges;
+    }
+    
+    let bins = match rule {
+        BinningRule::SqrtN => {
+            bins_override.unwrap_or_else(|| (n.sqrt().ceil() as usize).max(1))
+        }
+        BinningRule::FreedmanDiaconis => {
+            if let Some(override_bins) = bins_override {
+                override_bins
+            } else {
+                let iqr_val = iqr(data);
+                if iqr_val.is_nan() || iqr_val <= 0.0 {
+                    // Fallback to sqrtN if IQR is invalid
+                    (n.sqrt().ceil() as usize).max(1)
+                } else {
+                    let bin_width = 2.0 * iqr_val / n.powf(1.0 / 3.0);
+                    if bin_width.is_nan() || bin_width <= 0.0 || bin_width > range {
+                        // Fallback to sqrtN
+                        (n.sqrt().ceil() as usize).max(1)
+                    } else {
+                        let computed_bins = ((range / bin_width).ceil() as usize).max(1);
+                        // Clamp to reasonable range
+                        computed_bins.min(2048).max(1)
+                    }
+                }
+            }
+        }
+        BinningRule::Scott => {
+            if let Some(override_bins) = bins_override {
+                override_bins
+            } else {
+                let stdev_val = stdev(data);
+                if stdev_val.is_nan() || stdev_val <= 0.0 {
+                    // Fallback to sqrtN if stdev is invalid
+                    (n.sqrt().ceil() as usize).max(1)
+                } else {
+                    let bin_width = 3.5 * stdev_val / n.powf(1.0 / 3.0);
+                    if bin_width.is_nan() || bin_width <= 0.0 || bin_width > range {
+                        // Fallback to sqrtN
+                        (n.sqrt().ceil() as usize).max(1)
+                    } else {
+                        let computed_bins = ((range / bin_width).ceil() as usize).max(1);
+                        // Clamp to reasonable range
+                        computed_bins.min(2048).max(1)
+                    }
+                }
+            }
+        }
+    };
+    
+    // Use fixed-width binning with computed number of bins
+    bin_edges_fixed_width(data, bins)
+}
+
+/// Result of histogram computation with edges
+#[derive(Debug, Clone)]
+pub struct HistogramWithEdges {
+    pub edges: Vec<f64>,
+    pub counts: Vec<usize>,
+}
+
+/// Calculate histogram with fixed-width binning, returning edges and counts.
+pub fn histogram_fixed_width_with_edges(data: &[f64], bins: usize) -> HistogramWithEdges {
+    let edges = bin_edges_fixed_width(data, bins);
+    let counts = if edges.is_empty() {
+        vec![]
+    } else {
+        histogram_edges(data, &edges)
+    };
+    HistogramWithEdges { edges, counts }
+}
+
+/// Calculate histogram with equal-frequency binning, returning edges and counts.
+pub fn histogram_equal_frequency_with_edges(data: &[f64], bins: usize) -> HistogramWithEdges {
+    let edges = bin_edges_equal_frequency(data, bins);
+    let counts = if edges.is_empty() {
+        vec![]
+    } else {
+        histogram_edges(data, &edges)
+    };
+    HistogramWithEdges { edges, counts }
+}
+
+/// Calculate histogram with automatic binning, returning edges and counts.
+pub fn histogram_auto_with_edges(
+    data: &[f64],
+    rule: BinningRule,
+    bins_override: Option<usize>,
+) -> HistogramWithEdges {
+    let edges = bin_edges_auto(data, rule, bins_override);
+    let counts = if edges.is_empty() {
+        vec![]
+    } else {
+        histogram_edges(data, &edges)
+    };
+    HistogramWithEdges { edges, counts }
+}
+
+/// Calculate histogram with automatic binning and tail collapse, returning edges and counts.
+/// 
+/// Tail collapse uses IQR-based outlier detection (k * IQR) to collapse extreme values
+/// into the first and last bins.
+pub fn histogram_auto_with_edges_collapse_tails(
+    data: &[f64],
+    rule: BinningRule,
+    bins_override: Option<usize>,
+    k: f64,
+) -> HistogramWithEdges {
+    if data.is_empty() {
+        return HistogramWithEdges {
+            edges: vec![],
+            counts: vec![],
+        };
+    }
+    
+    // Compute IQR for outlier detection
+    let iqr_val = iqr(data);
+    let q = quartiles(data);
+    let q1 = q[0];
+    let q3 = q[2];
+    
+    if iqr_val.is_nan() || q1.is_nan() || q3.is_nan() {
+        // Fallback to non-collapsed version
+        return histogram_auto_with_edges(data, rule, bins_override);
+    }
+    
+    // Calculate outlier bounds
+    let lower_bound = q1 - k * iqr_val;
+    let upper_bound = q3 + k * iqr_val;
+    
+    // Filter data to inner range (excluding outliers) for bin edge computation
+    let inner_data: Vec<f64> = data
+        .iter()
+        .filter(|&&x| !x.is_nan() && x >= lower_bound && x <= upper_bound)
+        .copied()
+        .collect();
+    
+    if inner_data.is_empty() {
+        // Fallback to non-collapsed version
+        return histogram_auto_with_edges(data, rule, bins_override);
+    }
+    
+    // Compute edges based on inner data
+    let inner_edges = bin_edges_auto(&inner_data, rule, bins_override);
+    
+    if inner_edges.is_empty() {
+        // Fallback to non-collapsed version
+        return histogram_auto_with_edges(data, rule, bins_override);
+    }
+    
+    // Extend edges to include outlier bins
+    let mut edges = Vec::with_capacity(inner_edges.len() + 2);
+    edges.push(f64::NEG_INFINITY); // For values < lower_bound
+    edges.extend_from_slice(&inner_edges);
+    edges.push(f64::INFINITY); // For values > upper_bound
+    
+    // Use clamped histogram to count outliers in first/last bins
+    let counts = histogram_edges_clamped(data, &edges);
+    
+    HistogramWithEdges { edges, counts }
+}
+
+/// Calculate histogram with custom edges, returning edges and counts.
+pub fn histogram_custom_with_edges(
+    data: &[f64],
+    edges: &[f64],
+    clamp_outside: bool,
+) -> HistogramWithEdges {
+    let edges_vec = edges.to_vec();
+    let counts = if clamp_outside {
+        histogram_edges_clamped(data, edges)
+    } else {
+        histogram_edges(data, edges)
+    };
+    HistogramWithEdges {
+        edges: edges_vec,
+        counts,
+    }
+}
+
 // =============================================================================
 // Higher Moments: Skewness & Kurtosis
 // =============================================================================
@@ -1378,55 +1756,918 @@ pub struct RegressionResult {
     pub residuals: Vec<f64>,
 }
 
-/// Simple linear regression: y = slope * x + intercept
-///
-/// Returns regression coefficients, R², and residuals.
-pub fn regress(x: &[f64], y: &[f64]) -> RegressionResult {
-    if x.len() != y.len() || x.len() < 2 {
-        return RegressionResult {
-            slope: f64::NAN,
-            intercept: f64::NAN,
-            r_squared: f64::NAN,
-            residuals: vec![],
-        };
+/// Linear regression coefficients (no residual allocation).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RegressionCoeffs {
+    pub slope: f64,
+    pub intercept: f64,
+    pub r_squared: f64,
+}
+
+/// Linear regression coefficients (f32, no residual allocation).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RegressionCoeffsF32 {
+    pub slope: f32,
+    pub intercept: f32,
+    pub r_squared: f32,
+}
+
+#[inline(always)]
+fn regression_invalid() -> RegressionCoeffs {
+    RegressionCoeffs {
+        slope: f64::NAN,
+        intercept: f64::NAN,
+        r_squared: f64::NAN,
     }
+}
 
-    let x_mean = mean(x);
-    let y_mean = mean(y);
-
-    // Calculate slope: cov(x,y) / var(x)
-    let cov_xy = covariance(x, y);
-    let var_x = variance(x);
-
-    if var_x == 0.0 || var_x.is_nan() {
-        return RegressionResult {
-            slope: f64::NAN,
-            intercept: f64::NAN,
-            r_squared: f64::NAN,
-            residuals: vec![],
-        };
+#[inline(always)]
+fn regression_invalid_f32() -> RegressionCoeffsF32 {
+    RegressionCoeffsF32 {
+        slope: f32::NAN,
+        intercept: f32::NAN,
+        r_squared: f32::NAN,
     }
+}
 
-    let slope = cov_xy / var_x;
-    let intercept = y_mean - slope * x_mean;
-
-    // Calculate R²
-    let r = corrcoeff(x, y);
-    let r_squared = if r.is_nan() { f64::NAN } else { r * r };
-
-    // Calculate residuals
-    let residuals: Vec<f64> = x
-        .iter()
-        .zip(y.iter())
-        .map(|(&xi, &yi)| yi - (slope * xi + intercept))
-        .collect();
-
+#[inline(always)]
+fn regression_result_invalid() -> RegressionResult {
     RegressionResult {
+        slope: f64::NAN,
+        intercept: f64::NAN,
+        r_squared: f64::NAN,
+        residuals: vec![],
+    }
+}
+
+/// Compute residuals into an output slice: out[i] = y[i] - (slope*x[i] + intercept)
+#[inline(always)]
+pub fn residuals_into(out: &mut [f64], x: &[f64], y: &[f64], slope: f64, intercept: f64) {
+    debug_assert_eq!(out.len(), x.len());
+    debug_assert_eq!(x.len(), y.len());
+
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        return residuals_into_wasm128(out, x, y, slope, intercept);
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+    let len = x.len();
+    let chunks = len / 4;
+    let unrolled = chunks / 4;
+
+    let slope_v = f64x4::splat(slope);
+    let intercept_v = f64x4::splat(intercept);
+
+    unsafe {
+        let x_ptr = x.as_ptr() as *const f64x4;
+        let y_ptr = y.as_ptr() as *const f64x4;
+        let out_ptr = out.as_mut_ptr() as *mut f64x4;
+
+        for i in 0..unrolled {
+            let bx = x_ptr.add(i * 4);
+            let by = y_ptr.add(i * 4);
+            let bo = out_ptr.add(i * 4);
+
+            bo.write_unaligned(by.read_unaligned() - (bx.read_unaligned() * slope_v + intercept_v));
+            bo.add(1)
+                .write_unaligned(by.add(1).read_unaligned() - (bx.add(1).read_unaligned() * slope_v + intercept_v));
+            bo.add(2)
+                .write_unaligned(by.add(2).read_unaligned() - (bx.add(2).read_unaligned() * slope_v + intercept_v));
+            bo.add(3)
+                .write_unaligned(by.add(3).read_unaligned() - (bx.add(3).read_unaligned() * slope_v + intercept_v));
+        }
+
+        for i in (unrolled * 4)..chunks {
+            let xv = x_ptr.add(i).read_unaligned();
+            let yv = y_ptr.add(i).read_unaligned();
+            out_ptr
+                .add(i)
+                .write_unaligned(yv - (xv * slope_v + intercept_v));
+        }
+    }
+
+    for i in (chunks * 4)..len {
+        out[i] = y[i] - x[i].mul_add(slope, intercept);
+    }
+    }
+}
+
+/// Compute residuals into an output slice (f32): out[i] = y[i] - (slope*x[i] + intercept)
+#[inline(always)]
+pub fn residuals_into_f32(out: &mut [f32], x: &[f32], y: &[f32], slope: f32, intercept: f32) {
+    debug_assert_eq!(out.len(), x.len());
+    debug_assert_eq!(x.len(), y.len());
+
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        return residuals_into_f32_wasm128(out, x, y, slope, intercept);
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+        // wide::f32x4 path (portable SIMD)
+        let len = x.len();
+        let chunks = len / 4;
+        let unrolled = chunks / 4;
+
+        let slope_v = f32x4::splat(slope);
+        let intercept_v = f32x4::splat(intercept);
+
+        unsafe {
+            let x_ptr = x.as_ptr() as *const f32x4;
+            let y_ptr = y.as_ptr() as *const f32x4;
+            let out_ptr = out.as_mut_ptr() as *mut f32x4;
+
+            for i in 0..unrolled {
+                let bx = x_ptr.add(i * 4);
+                let by = y_ptr.add(i * 4);
+                let bo = out_ptr.add(i * 4);
+
+                bo.write_unaligned(by.read_unaligned() - (bx.read_unaligned() * slope_v + intercept_v));
+                bo.add(1).write_unaligned(by.add(1).read_unaligned() - (bx.add(1).read_unaligned() * slope_v + intercept_v));
+                bo.add(2).write_unaligned(by.add(2).read_unaligned() - (bx.add(2).read_unaligned() * slope_v + intercept_v));
+                bo.add(3).write_unaligned(by.add(3).read_unaligned() - (bx.add(3).read_unaligned() * slope_v + intercept_v));
+            }
+
+            for i in (unrolled * 4)..chunks {
+                let xv = x_ptr.add(i).read_unaligned();
+                let yv = y_ptr.add(i).read_unaligned();
+                out_ptr.add(i).write_unaligned(yv - (xv * slope_v + intercept_v));
+            }
+        }
+
+        for i in (chunks * 4)..len {
+            out[i] = y[i] - x[i].mul_add(slope, intercept);
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+fn residuals_into_f32_wasm128(out: &mut [f32], x: &[f32], y: &[f32], slope: f32, intercept: f32) {
+    let len = x.len();
+    let chunks = len / 4; // f32x4
+    let unrolled = chunks / 4; // 16 elements per iter
+
+    let slope_v = f32x4_splat(slope);
+    let intercept_v = f32x4_splat(intercept);
+
+    unsafe {
+        let x_ptr = x.as_ptr();
+        let y_ptr = y.as_ptr();
+        let out_ptr = out.as_mut_ptr();
+
+        for i in 0..unrolled {
+            let base = i * 16;
+
+            let xv0 = v128_load(x_ptr.add(base) as *const v128);
+            let yv0 = v128_load(y_ptr.add(base) as *const v128);
+            let xv1 = v128_load(x_ptr.add(base + 4) as *const v128);
+            let yv1 = v128_load(y_ptr.add(base + 4) as *const v128);
+            let xv2 = v128_load(x_ptr.add(base + 8) as *const v128);
+            let yv2 = v128_load(y_ptr.add(base + 8) as *const v128);
+            let xv3 = v128_load(x_ptr.add(base + 12) as *const v128);
+            let yv3 = v128_load(y_ptr.add(base + 12) as *const v128);
+
+            let r0 = f32x4_sub(yv0, f32x4_add(f32x4_mul(xv0, slope_v), intercept_v));
+            let r1 = f32x4_sub(yv1, f32x4_add(f32x4_mul(xv1, slope_v), intercept_v));
+            let r2 = f32x4_sub(yv2, f32x4_add(f32x4_mul(xv2, slope_v), intercept_v));
+            let r3 = f32x4_sub(yv3, f32x4_add(f32x4_mul(xv3, slope_v), intercept_v));
+
+            v128_store(out_ptr.add(base) as *mut v128, r0);
+            v128_store(out_ptr.add(base + 4) as *mut v128, r1);
+            v128_store(out_ptr.add(base + 8) as *mut v128, r2);
+            v128_store(out_ptr.add(base + 12) as *mut v128, r3);
+        }
+
+        for i in (unrolled * 4)..chunks {
+            let base = i * 4;
+            let xv = v128_load(x_ptr.add(base) as *const v128);
+            let yv = v128_load(y_ptr.add(base) as *const v128);
+            let r = f32x4_sub(yv, f32x4_add(f32x4_mul(xv, slope_v), intercept_v));
+            v128_store(out_ptr.add(base) as *mut v128, r);
+        }
+    }
+
+    for i in (chunks * 4)..len {
+        out[i] = y[i] - x[i].mul_add(slope, intercept);
+    }
+}
+
+/// SIMD-optimized regression coefficients for f32 input.
+/// On wasm32+simd128 uses f32x4; otherwise uses wide::f32x4.
+pub fn regress_simd_coeffs_f32(x: &[f32], y: &[f32]) -> RegressionCoeffsF32 {
+    if x.len() != y.len() || x.len() < 2 {
+        return regression_invalid_f32();
+    }
+
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        return regress_simd_coeffs_f32_wasm128(x, y);
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+        let len = x.len();
+        let n = len as f32;
+        let chunks = len / 4;
+        let unrolled = chunks / 4;
+
+        let mut sx = f32x4::splat(0.0);
+        let mut sy = f32x4::splat(0.0);
+        let mut sxx = f32x4::splat(0.0);
+        let mut syy = f32x4::splat(0.0);
+        let mut sxy = f32x4::splat(0.0);
+
+        unsafe {
+            let x_ptr = x.as_ptr() as *const f32x4;
+            let y_ptr = y.as_ptr() as *const f32x4;
+
+            for i in 0..unrolled {
+                let bx = x_ptr.add(i * 4);
+                let by = y_ptr.add(i * 4);
+
+                let x0 = bx.read_unaligned();
+                let y0 = by.read_unaligned();
+                let x1 = bx.add(1).read_unaligned();
+                let y1 = by.add(1).read_unaligned();
+                let x2 = bx.add(2).read_unaligned();
+                let y2 = by.add(2).read_unaligned();
+                let x3 = bx.add(3).read_unaligned();
+                let y3 = by.add(3).read_unaligned();
+
+                sx += x0 + x1 + x2 + x3;
+                sy += y0 + y1 + y2 + y3;
+                sxx += x0 * x0 + x1 * x1 + x2 * x2 + x3 * x3;
+                syy += y0 * y0 + y1 * y1 + y2 * y2 + y3 * y3;
+                sxy += x0 * y0 + x1 * y1 + x2 * y2 + x3 * y3;
+            }
+
+            for i in (unrolled * 4)..chunks {
+                let xv = x_ptr.add(i).read_unaligned();
+                let yv = y_ptr.add(i).read_unaligned();
+                sx += xv;
+                sy += yv;
+                sxx += xv * xv;
+                syy += yv * yv;
+                sxy += xv * yv;
+            }
+        }
+
+        let sx_a = sx.to_array();
+        let sy_a = sy.to_array();
+        let sxx_a = sxx.to_array();
+        let syy_a = syy.to_array();
+        let sxy_a = sxy.to_array();
+
+        let mut sum_x = sx_a[0] + sx_a[1] + sx_a[2] + sx_a[3];
+        let mut sum_y = sy_a[0] + sy_a[1] + sy_a[2] + sy_a[3];
+        let mut sum_xx = sxx_a[0] + sxx_a[1] + sxx_a[2] + sxx_a[3];
+        let mut sum_yy = syy_a[0] + syy_a[1] + syy_a[2] + syy_a[3];
+        let mut sum_xy = sxy_a[0] + sxy_a[1] + sxy_a[2] + sxy_a[3];
+
+        for i in (chunks * 4)..len {
+            let xi = x[i];
+            let yi = y[i];
+            sum_x += xi;
+            sum_y += yi;
+            sum_xx = xi.mul_add(xi, sum_xx);
+            sum_yy = yi.mul_add(yi, sum_yy);
+            sum_xy = xi.mul_add(yi, sum_xy);
+        }
+
+        let numerator = n.mul_add(sum_xy, -(sum_x * sum_y));
+        let denom_x = n.mul_add(sum_xx, -(sum_x * sum_x));
+        if denom_x <= 0.0 || denom_x.is_nan() {
+            return regression_invalid_f32();
+        }
+
+        let slope = numerator / denom_x;
+        let intercept = (sum_y - slope * sum_x) / n;
+
+        let denom_y = n.mul_add(sum_yy, -(sum_y * sum_y));
+        let r_squared = if denom_y > 0.0 && !denom_y.is_nan() {
+            (numerator * numerator) / (denom_x * denom_y)
+        } else {
+            f32::NAN
+        };
+
+        RegressionCoeffsF32 {
+            slope,
+            intercept,
+            r_squared,
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+fn regress_simd_coeffs_f32_wasm128(x: &[f32], y: &[f32]) -> RegressionCoeffsF32 {
+    let len = x.len();
+    let n = len as f32;
+    let chunks = len / 4;
+    let unrolled = chunks / 4; // 16 elements per iter
+
+    let mut sx: v128 = f32x4_splat(0.0);
+    let mut sy: v128 = f32x4_splat(0.0);
+    let mut sxx: v128 = f32x4_splat(0.0);
+    let mut syy: v128 = f32x4_splat(0.0);
+    let mut sxy: v128 = f32x4_splat(0.0);
+
+    unsafe {
+        let x_ptr = x.as_ptr();
+        let y_ptr = y.as_ptr();
+
+        for i in 0..unrolled {
+            let base = i * 16;
+            let xv0 = v128_load(x_ptr.add(base) as *const v128);
+            let yv0 = v128_load(y_ptr.add(base) as *const v128);
+            let xv1 = v128_load(x_ptr.add(base + 4) as *const v128);
+            let yv1 = v128_load(y_ptr.add(base + 4) as *const v128);
+            let xv2 = v128_load(x_ptr.add(base + 8) as *const v128);
+            let yv2 = v128_load(y_ptr.add(base + 8) as *const v128);
+            let xv3 = v128_load(x_ptr.add(base + 12) as *const v128);
+            let yv3 = v128_load(y_ptr.add(base + 12) as *const v128);
+
+            sx = f32x4_add(sx, f32x4_add(xv0, f32x4_add(xv1, f32x4_add(xv2, xv3))));
+            sy = f32x4_add(sy, f32x4_add(yv0, f32x4_add(yv1, f32x4_add(yv2, yv3))));
+
+            sxx = f32x4_add(
+                sxx,
+                f32x4_add(
+                    f32x4_mul(xv0, xv0),
+                    f32x4_add(f32x4_mul(xv1, xv1), f32x4_add(f32x4_mul(xv2, xv2), f32x4_mul(xv3, xv3))),
+                ),
+            );
+            syy = f32x4_add(
+                syy,
+                f32x4_add(
+                    f32x4_mul(yv0, yv0),
+                    f32x4_add(f32x4_mul(yv1, yv1), f32x4_add(f32x4_mul(yv2, yv2), f32x4_mul(yv3, yv3))),
+                ),
+            );
+            sxy = f32x4_add(
+                sxy,
+                f32x4_add(
+                    f32x4_mul(xv0, yv0),
+                    f32x4_add(f32x4_mul(xv1, yv1), f32x4_add(f32x4_mul(xv2, yv2), f32x4_mul(xv3, yv3))),
+                ),
+            );
+        }
+
+        for i in (unrolled * 4)..chunks {
+            let base = i * 4;
+            let xv = v128_load(x_ptr.add(base) as *const v128);
+            let yv = v128_load(y_ptr.add(base) as *const v128);
+            sx = f32x4_add(sx, xv);
+            sy = f32x4_add(sy, yv);
+            sxx = f32x4_add(sxx, f32x4_mul(xv, xv));
+            syy = f32x4_add(syy, f32x4_mul(yv, yv));
+            sxy = f32x4_add(sxy, f32x4_mul(xv, yv));
+        }
+    }
+
+    let mut sum_x =
+        f32x4_extract_lane::<0>(sx) + f32x4_extract_lane::<1>(sx) + f32x4_extract_lane::<2>(sx) + f32x4_extract_lane::<3>(sx);
+    let mut sum_y =
+        f32x4_extract_lane::<0>(sy) + f32x4_extract_lane::<1>(sy) + f32x4_extract_lane::<2>(sy) + f32x4_extract_lane::<3>(sy);
+    let mut sum_xx =
+        f32x4_extract_lane::<0>(sxx) + f32x4_extract_lane::<1>(sxx) + f32x4_extract_lane::<2>(sxx) + f32x4_extract_lane::<3>(sxx);
+    let mut sum_yy =
+        f32x4_extract_lane::<0>(syy) + f32x4_extract_lane::<1>(syy) + f32x4_extract_lane::<2>(syy) + f32x4_extract_lane::<3>(syy);
+    let mut sum_xy =
+        f32x4_extract_lane::<0>(sxy) + f32x4_extract_lane::<1>(sxy) + f32x4_extract_lane::<2>(sxy) + f32x4_extract_lane::<3>(sxy);
+
+    for i in (chunks * 4)..len {
+        let xi = x[i];
+        let yi = y[i];
+        sum_x += xi;
+        sum_y += yi;
+        sum_xx = xi.mul_add(xi, sum_xx);
+        sum_yy = yi.mul_add(yi, sum_yy);
+        sum_xy = xi.mul_add(yi, sum_xy);
+    }
+
+    let numerator = n.mul_add(sum_xy, -(sum_x * sum_y));
+    let denom_x = n.mul_add(sum_xx, -(sum_x * sum_x));
+    if denom_x <= 0.0 || denom_x.is_nan() {
+        return regression_invalid_f32();
+    }
+
+    let slope = numerator / denom_x;
+    let intercept = (sum_y - slope * sum_x) / n;
+
+    let denom_y = n.mul_add(sum_yy, -(sum_y * sum_y));
+    let r_squared = if denom_y > 0.0 && !denom_y.is_nan() {
+        (numerator * numerator) / (denom_x * denom_y)
+    } else {
+        f32::NAN
+    };
+
+    RegressionCoeffsF32 {
         slope,
         intercept,
         r_squared,
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+fn residuals_into_wasm128(out: &mut [f64], x: &[f64], y: &[f64], slope: f64, intercept: f64) {
+    let len = x.len();
+    let chunks = len / 2; // f64x2
+    let unrolled = chunks / 4; // 8 elements per iter
+
+    let slope_v = f64x2_splat(slope);
+    let intercept_v = f64x2_splat(intercept);
+
+    unsafe {
+        let x_ptr = x.as_ptr();
+        let y_ptr = y.as_ptr();
+        let out_ptr = out.as_mut_ptr();
+
+        for i in 0..unrolled {
+            let base = i * 8;
+
+            let xv0 = v128_load(x_ptr.add(base) as *const v128);
+            let yv0 = v128_load(y_ptr.add(base) as *const v128);
+            let xv1 = v128_load(x_ptr.add(base + 2) as *const v128);
+            let yv1 = v128_load(y_ptr.add(base + 2) as *const v128);
+            let xv2 = v128_load(x_ptr.add(base + 4) as *const v128);
+            let yv2 = v128_load(y_ptr.add(base + 4) as *const v128);
+            let xv3 = v128_load(x_ptr.add(base + 6) as *const v128);
+            let yv3 = v128_load(y_ptr.add(base + 6) as *const v128);
+
+            let r0 = f64x2_sub(yv0, f64x2_add(f64x2_mul(xv0, slope_v), intercept_v));
+            let r1 = f64x2_sub(yv1, f64x2_add(f64x2_mul(xv1, slope_v), intercept_v));
+            let r2 = f64x2_sub(yv2, f64x2_add(f64x2_mul(xv2, slope_v), intercept_v));
+            let r3 = f64x2_sub(yv3, f64x2_add(f64x2_mul(xv3, slope_v), intercept_v));
+
+            v128_store(out_ptr.add(base) as *mut v128, r0);
+            v128_store(out_ptr.add(base + 2) as *mut v128, r1);
+            v128_store(out_ptr.add(base + 4) as *mut v128, r2);
+            v128_store(out_ptr.add(base + 6) as *mut v128, r3);
+        }
+
+        for i in (unrolled * 4)..chunks {
+            let base = i * 2;
+            let xv = v128_load(x_ptr.add(base) as *const v128);
+            let yv = v128_load(y_ptr.add(base) as *const v128);
+            let r = f64x2_sub(yv, f64x2_add(f64x2_mul(xv, slope_v), intercept_v));
+            v128_store(out_ptr.add(base) as *mut v128, r);
+        }
+    }
+
+    for i in (chunks * 2)..len {
+        out[i] = y[i] - x[i].mul_add(slope, intercept);
+    }
+}
+
+/// Naive linear regression implementation (scalar, multi-pass).
+/// Intentionally non-optimized for performance comparison.
+pub fn regress_naive_coeffs(x: &[f64], y: &[f64]) -> RegressionCoeffs {
+    if x.len() != y.len() || x.len() < 2 {
+        return regression_invalid();
+    }
+
+    // Pass 1: Compute means (scalar)
+    let n = x.len() as f64;
+    let mut sum_x = 0.0;
+    let mut sum_y = 0.0;
+    for i in 0..x.len() {
+        sum_x += x[i];
+        sum_y += y[i];
+    }
+    let x_mean = sum_x / n;
+    let y_mean = sum_y / n;
+
+    // Pass 2: Compute slope numerator and denominator (scalar, centered)
+    let mut num = 0.0;
+    let mut den = 0.0;
+    for i in 0..x.len() {
+        let dx = x[i] - x_mean;
+        let dy = y[i] - y_mean;
+        num = dx.mul_add(dy, num);
+        den = dx.mul_add(dx, den);
+    }
+
+    if den == 0.0 || den.is_nan() {
+        return regression_invalid();
+    }
+
+    let slope = num / den;
+    let intercept = y_mean - slope * x_mean;
+
+    // Pass 3: Compute R² via sum of squares (scalar)
+    let mut ss_res = 0.0;
+    let mut ss_tot = 0.0;
+    for i in 0..x.len() {
+        let y_pred = x[i].mul_add(slope, intercept);
+        let residual = y[i] - y_pred;
+        ss_res = residual.mul_add(residual, ss_res);
+        let dy = y[i] - y_mean;
+        ss_tot = dy.mul_add(dy, ss_tot);
+    }
+
+    let r_squared = if ss_tot > 0.0 && !ss_tot.is_nan() {
+        1.0 - (ss_res / ss_tot)
+    } else {
+        f64::NAN
+    };
+
+    RegressionCoeffs {
+        slope,
+        intercept,
+        r_squared,
+    }
+}
+
+pub fn regress_naive(x: &[f64], y: &[f64]) -> RegressionResult {
+    let coeffs = regress_naive_coeffs(x, y);
+    if coeffs.slope.is_nan() {
+        return regression_result_invalid();
+    }
+
+    let mut residuals = Vec::<f64>::with_capacity(x.len());
+    unsafe { residuals.set_len(x.len()) };
+    residuals_into(&mut residuals, x, y, coeffs.slope, coeffs.intercept);
+
+    RegressionResult {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
         residuals,
     }
+}
+
+/// SIMD-optimized linear regression (fused sums, single-pass for statistics).
+/// Uses the same SIMD pattern as corrcoeff for maximum efficiency.
+pub fn regress_simd_coeffs(x: &[f64], y: &[f64]) -> RegressionCoeffs {
+    if x.len() != y.len() || x.len() < 2 {
+        return regression_invalid();
+    }
+
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        return regress_simd_coeffs_wasm128(x, y);
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+    let len = x.len();
+    let n = len as f64;
+    let chunks = len / 4;
+    let unrolled = chunks / 4;
+
+    // Single-pass SIMD accumulation of all needed sums
+    let mut sx = SimdAccum4::zero();
+    let mut sy = SimdAccum4::zero();
+    let mut sxx = SimdAccum4::zero();
+    let mut syy = SimdAccum4::zero();
+    let mut sxy = SimdAccum4::zero();
+
+    unsafe {
+        let x_ptr = x.as_ptr() as *const f64x4;
+        let y_ptr = y.as_ptr() as *const f64x4;
+
+        for i in 0..unrolled {
+            let bx = x_ptr.add(i * 4);
+            let by = y_ptr.add(i * 4);
+
+            let x1 = bx.read_unaligned();
+            let y1 = by.read_unaligned();
+            let x2 = bx.add(1).read_unaligned();
+            let y2 = by.add(1).read_unaligned();
+            let x3 = bx.add(2).read_unaligned();
+            let y3 = by.add(2).read_unaligned();
+            let x4 = bx.add(3).read_unaligned();
+            let y4 = by.add(3).read_unaligned();
+
+            sx.v1 += x1;
+            sy.v1 += y1;
+            sxx.v1 += x1 * x1;
+            syy.v1 += y1 * y1;
+            sxy.v1 += x1 * y1;
+
+            sx.v2 += x2;
+            sy.v2 += y2;
+            sxx.v2 += x2 * x2;
+            syy.v2 += y2 * y2;
+            sxy.v2 += x2 * y2;
+
+            sx.v3 += x3;
+            sy.v3 += y3;
+            sxx.v3 += x3 * x3;
+            syy.v3 += y3 * y3;
+            sxy.v3 += x3 * y3;
+
+            sx.v4 += x4;
+            sy.v4 += y4;
+            sxx.v4 += x4 * x4;
+            syy.v4 += y4 * y4;
+            sxy.v4 += x4 * y4;
+        }
+
+        for i in (unrolled * 4)..chunks {
+            let xv = x_ptr.add(i).read_unaligned();
+            let yv = y_ptr.add(i).read_unaligned();
+            sx.v1 += xv;
+            sy.v1 += yv;
+            sxx.v1 += xv * xv;
+            syy.v1 += yv * yv;
+            sxy.v1 += xv * yv;
+        }
+    }
+
+    let mut sum_x = sx.reduce_add();
+    let mut sum_y = sy.reduce_add();
+    let mut sum_xx = sxx.reduce_add();
+    let mut sum_yy = syy.reduce_add();
+    let mut sum_xy = sxy.reduce_add();
+
+    // Handle remaining elements
+    for i in (chunks * 4)..len {
+        let xi = x[i];
+        let yi = y[i];
+        sum_x += xi;
+        sum_y += yi;
+        sum_xx = xi.mul_add(xi, sum_xx);
+        sum_yy = yi.mul_add(yi, sum_yy);
+        sum_xy = xi.mul_add(yi, sum_xy);
+    }
+
+    // Compute slope and intercept using closed-form OLS
+    let numerator = n * sum_xy - sum_x * sum_y;
+    let denom_x = n * sum_xx - sum_x * sum_x;
+
+    if denom_x <= 0.0 || denom_x.is_nan() {
+        return regression_invalid();
+    }
+
+    let slope = numerator / denom_x;
+    let intercept = (sum_y - slope * sum_x) / n;
+
+    // Compute R² from the same sums (no need for corrcoeff)
+    let denom_y = n * sum_yy - sum_y * sum_y;
+    let r_squared = if denom_y > 0.0 && !denom_y.is_nan() {
+        (numerator * numerator) / (denom_x * denom_y)
+    } else {
+        f64::NAN
+    };
+
+    RegressionCoeffs {
+        slope,
+        intercept,
+        r_squared,
+    }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+fn regress_simd_coeffs_wasm128(x: &[f64], y: &[f64]) -> RegressionCoeffs {
+    let len = x.len();
+    let n = len as f64;
+    let chunks = len / 2; // f64x2
+    let unrolled = chunks / 4; // 8 elements per iter
+
+    // Two accumulators per sum to reduce dependency chains.
+    let mut sx0: v128 = f64x2_splat(0.0);
+    let mut sx1: v128 = f64x2_splat(0.0);
+    let mut sy0: v128 = f64x2_splat(0.0);
+    let mut sy1: v128 = f64x2_splat(0.0);
+    let mut sxx0: v128 = f64x2_splat(0.0);
+    let mut sxx1: v128 = f64x2_splat(0.0);
+    let mut syy0: v128 = f64x2_splat(0.0);
+    let mut syy1: v128 = f64x2_splat(0.0);
+    let mut sxy0: v128 = f64x2_splat(0.0);
+    let mut sxy1: v128 = f64x2_splat(0.0);
+
+    unsafe {
+        let x_ptr = x.as_ptr();
+        let y_ptr = y.as_ptr();
+
+        for i in 0..unrolled {
+            let base = i * 8;
+
+            let xv0 = v128_load(x_ptr.add(base) as *const v128);
+            let yv0 = v128_load(y_ptr.add(base) as *const v128);
+            let xv1 = v128_load(x_ptr.add(base + 2) as *const v128);
+            let yv1 = v128_load(y_ptr.add(base + 2) as *const v128);
+            let xv2 = v128_load(x_ptr.add(base + 4) as *const v128);
+            let yv2 = v128_load(y_ptr.add(base + 4) as *const v128);
+            let xv3 = v128_load(x_ptr.add(base + 6) as *const v128);
+            let yv3 = v128_load(y_ptr.add(base + 6) as *const v128);
+
+            // Interleave updates across 2 accumulators.
+            sx0 = f64x2_add(sx0, xv0);
+            sy0 = f64x2_add(sy0, yv0);
+            sxx0 = f64x2_add(sxx0, f64x2_mul(xv0, xv0));
+            syy0 = f64x2_add(syy0, f64x2_mul(yv0, yv0));
+            sxy0 = f64x2_add(sxy0, f64x2_mul(xv0, yv0));
+
+            sx1 = f64x2_add(sx1, xv1);
+            sy1 = f64x2_add(sy1, yv1);
+            sxx1 = f64x2_add(sxx1, f64x2_mul(xv1, xv1));
+            syy1 = f64x2_add(syy1, f64x2_mul(yv1, yv1));
+            sxy1 = f64x2_add(sxy1, f64x2_mul(xv1, yv1));
+
+            sx0 = f64x2_add(sx0, xv2);
+            sy0 = f64x2_add(sy0, yv2);
+            sxx0 = f64x2_add(sxx0, f64x2_mul(xv2, xv2));
+            syy0 = f64x2_add(syy0, f64x2_mul(yv2, yv2));
+            sxy0 = f64x2_add(sxy0, f64x2_mul(xv2, yv2));
+
+            sx1 = f64x2_add(sx1, xv3);
+            sy1 = f64x2_add(sy1, yv3);
+            sxx1 = f64x2_add(sxx1, f64x2_mul(xv3, xv3));
+            syy1 = f64x2_add(syy1, f64x2_mul(yv3, yv3));
+            sxy1 = f64x2_add(sxy1, f64x2_mul(xv3, yv3));
+        }
+
+        let mut sx = f64x2_add(sx0, sx1);
+        let mut sy = f64x2_add(sy0, sy1);
+        let mut sxx = f64x2_add(sxx0, sxx1);
+        let mut syy = f64x2_add(syy0, syy1);
+        let mut sxy = f64x2_add(sxy0, sxy1);
+
+        for i in (unrolled * 4)..chunks {
+            let base = i * 2;
+            let xv = v128_load(x_ptr.add(base) as *const v128);
+            let yv = v128_load(y_ptr.add(base) as *const v128);
+            sx = f64x2_add(sx, xv);
+            sy = f64x2_add(sy, yv);
+            sxx = f64x2_add(sxx, f64x2_mul(xv, xv));
+            syy = f64x2_add(syy, f64x2_mul(yv, yv));
+            sxy = f64x2_add(sxy, f64x2_mul(xv, yv));
+        }
+        // write back combined accumulators to outer scope by shadowing vars below
+
+        let mut sum_x = f64x2_extract_lane::<0>(sx) + f64x2_extract_lane::<1>(sx);
+        let mut sum_y = f64x2_extract_lane::<0>(sy) + f64x2_extract_lane::<1>(sy);
+        let mut sum_xx = f64x2_extract_lane::<0>(sxx) + f64x2_extract_lane::<1>(sxx);
+        let mut sum_yy = f64x2_extract_lane::<0>(syy) + f64x2_extract_lane::<1>(syy);
+        let mut sum_xy = f64x2_extract_lane::<0>(sxy) + f64x2_extract_lane::<1>(sxy);
+
+        for i in (chunks * 2)..len {
+            let xi = x[i];
+            let yi = y[i];
+            sum_x += xi;
+            sum_y += yi;
+            sum_xx = xi.mul_add(xi, sum_xx);
+            sum_yy = yi.mul_add(yi, sum_yy);
+            sum_xy = xi.mul_add(yi, sum_xy);
+        }
+
+        let numerator = n * sum_xy - sum_x * sum_y;
+        let denom_x = n * sum_xx - sum_x * sum_x;
+        if denom_x <= 0.0 || denom_x.is_nan() {
+            return regression_invalid();
+        }
+
+        let slope = numerator / denom_x;
+        let intercept = (sum_y - slope * sum_x) / n;
+
+        let denom_y = n * sum_yy - sum_y * sum_y;
+        let r_squared = if denom_y > 0.0 && !denom_y.is_nan() {
+            (numerator * numerator) / (denom_x * denom_y)
+        } else {
+            f64::NAN
+        };
+
+        return RegressionCoeffs {
+            slope,
+            intercept,
+            r_squared,
+        };
+    }
+}
+
+pub fn regress_simd(x: &[f64], y: &[f64]) -> RegressionResult {
+    let coeffs = regress_simd_coeffs(x, y);
+    if coeffs.slope.is_nan() {
+        return regression_result_invalid();
+    }
+
+    let mut residuals = Vec::<f64>::with_capacity(x.len());
+    unsafe { residuals.set_len(x.len()) };
+    residuals_into(&mut residuals, x, y, coeffs.slope, coeffs.intercept);
+
+    RegressionResult {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
+        residuals,
+    }
+}
+
+/// BLAS-like kernels-based linear regression.
+/// Uses minimal kernel operations (dot product, sum, axpy-style residuals).
+pub fn regress_kernels_coeffs(x: &[f64], y: &[f64]) -> RegressionCoeffs {
+    if x.len() != y.len() || x.len() < 2 {
+        return regression_invalid();
+    }
+
+    let n = x.len() as f64;
+
+    // Kernel 1: Dot products and sums (SIMD inside sum/dot_product)
+    let sum_x = sum(x);
+    let sum_y = sum(y);
+    let sum_xx = dot_product(x, x);
+    let sum_yy = dot_product(y, y);
+    let sum_xy = dot_product(x, y);
+
+    let numerator = n * sum_xy - sum_x * sum_y;
+    let denom_x = n * sum_xx - sum_x * sum_x;
+    if denom_x <= 0.0 || denom_x.is_nan() {
+        return regression_invalid();
+    }
+
+    let slope = numerator / denom_x;
+    let intercept = (sum_y - slope * sum_x) / n;
+
+    let denom_y = n * sum_yy - sum_y * sum_y;
+    let r_squared = if denom_y > 0.0 && !denom_y.is_nan() {
+        (numerator * numerator) / (denom_x * denom_y)
+    } else {
+        f64::NAN
+    };
+
+    RegressionCoeffs {
+        slope,
+        intercept,
+        r_squared,
+    }
+}
+
+pub fn regress_kernels(x: &[f64], y: &[f64]) -> RegressionResult {
+    let coeffs = regress_kernels_coeffs(x, y);
+    if coeffs.slope.is_nan() {
+        return regression_result_invalid();
+    }
+
+    let mut residuals = Vec::<f64>::with_capacity(x.len());
+    unsafe { residuals.set_len(x.len()) };
+    residuals_into(&mut residuals, x, y, coeffs.slope, coeffs.intercept);
+
+    RegressionResult {
+        slope: coeffs.slope,
+        intercept: coeffs.intercept,
+        r_squared: coeffs.r_squared,
+        residuals,
+    }
+}
+
+/// Helper: dot product of two slices (uses SIMD internally)
+#[inline(always)]
+fn dot_product(a: &[f64], b: &[f64]) -> f64 {
+    if a.len() != b.len() {
+        return f64::NAN;
+    }
+    // Use SIMD-optimized sum for the element-wise products
+    // This is a kernel operation - compute products then sum with SIMD
+    let len = a.len();
+    let chunks = len / 4;
+    let unrolled = chunks / 4;
+
+    let mut acc = SimdAccum4::zero();
+
+    unsafe {
+        let a_ptr = a.as_ptr() as *const f64x4;
+        let b_ptr = b.as_ptr() as *const f64x4;
+
+        for i in 0..unrolled {
+            let ba = a_ptr.add(i * 4);
+            let bb = b_ptr.add(i * 4);
+
+            acc.v1 += ba.read_unaligned() * bb.read_unaligned();
+            acc.v2 += ba.add(1).read_unaligned() * bb.add(1).read_unaligned();
+            acc.v3 += ba.add(2).read_unaligned() * bb.add(2).read_unaligned();
+            acc.v4 += ba.add(3).read_unaligned() * bb.add(3).read_unaligned();
+        }
+
+        for i in (unrolled * 4)..chunks {
+            acc.v1 += a_ptr.add(i).read_unaligned() * b_ptr.add(i).read_unaligned();
+        }
+    }
+
+    let mut result = acc.reduce_add();
+
+    for i in (chunks * 4)..len {
+        result = a[i].mul_add(b[i], result);
+    }
+
+    result
+}
+
+/// Simple linear regression: y = slope * x + intercept
+///
+/// Returns regression coefficients, R², and residuals.
+/// This is an alias for regress_simd (the optimized default).
+pub fn regress(x: &[f64], y: &[f64]) -> RegressionResult {
+    regress_simd(x, y)
 }
 
 // =============================================================================
@@ -2088,6 +3329,68 @@ mod tests {
         for &residual in &result.residuals {
             assert!(residual.abs() < 1e-10);
         }
+    }
+
+    #[test]
+    fn test_regress_variants_match() {
+        // Test that all three regression variants produce the same results
+        // Use a realistic dataset with some noise
+        let x: Vec<f64> = (0..100).map(|i| i as f64 * 0.1).collect();
+        let y: Vec<f64> = x.iter().map(|&xi| 2.5 * xi + 1.0 + (xi * 0.01)).collect();
+        
+        let result_naive = regress_naive(&x, &y);
+        let result_simd = regress_simd(&x, &y);
+        let result_kernels = regress_kernels(&x, &y);
+        let result_default = regress(&x, &y);
+        
+        // All variants should match within reasonable epsilon (1e-9 for f64)
+        assert_relative_eq!(result_naive.slope, result_simd.slope, epsilon = 1e-9);
+        assert_relative_eq!(result_naive.intercept, result_simd.intercept, epsilon = 1e-9);
+        assert_relative_eq!(result_naive.r_squared, result_simd.r_squared, epsilon = 1e-9);
+        
+        assert_relative_eq!(result_naive.slope, result_kernels.slope, epsilon = 1e-9);
+        assert_relative_eq!(result_naive.intercept, result_kernels.intercept, epsilon = 1e-9);
+        assert_relative_eq!(result_naive.r_squared, result_kernels.r_squared, epsilon = 1e-9);
+        
+        // Default should match SIMD (since it's an alias)
+        assert_relative_eq!(result_default.slope, result_simd.slope, epsilon = 1e-9);
+        assert_relative_eq!(result_default.intercept, result_simd.intercept, epsilon = 1e-9);
+        assert_relative_eq!(result_default.r_squared, result_simd.r_squared, epsilon = 1e-9);
+        
+        // Residuals should match
+        assert_eq!(result_naive.residuals.len(), result_simd.residuals.len());
+        assert_eq!(result_naive.residuals.len(), result_kernels.residuals.len());
+        for i in 0..result_naive.residuals.len() {
+            assert_relative_eq!(result_naive.residuals[i], result_simd.residuals[i], epsilon = 1e-9);
+            assert_relative_eq!(result_naive.residuals[i], result_kernels.residuals[i], epsilon = 1e-9);
+        }
+    }
+
+    #[test]
+    fn test_regress_variants_edge_cases() {
+        // Test edge cases: all variants should handle them the same way
+        let empty_x: Vec<f64> = vec![];
+        let empty_y: Vec<f64> = vec![];
+        
+        let result_naive = regress_naive(&empty_x, &empty_y);
+        let result_simd = regress_simd(&empty_x, &empty_y);
+        let result_kernels = regress_kernels(&empty_x, &empty_y);
+        
+        assert!(result_naive.slope.is_nan());
+        assert!(result_simd.slope.is_nan());
+        assert!(result_kernels.slope.is_nan());
+        
+        // Test with constant x (zero variance)
+        let const_x = [1.0, 1.0, 1.0, 1.0, 1.0];
+        let y = [2.0, 3.0, 4.0, 5.0, 6.0];
+        
+        let result_naive = regress_naive(&const_x, &y);
+        let result_simd = regress_simd(&const_x, &y);
+        let result_kernels = regress_kernels(&const_x, &y);
+        
+        assert!(result_naive.slope.is_nan());
+        assert!(result_simd.slope.is_nan());
+        assert!(result_kernels.slope.is_nan());
     }
 
     #[test]

@@ -10,9 +10,7 @@ name = "stat_core"
 crate-type = ["lib"]
 
 [dependencies]
-num-traits = "0.2"
 wide = "0.7"
-statistical = "1.0"
 statrs = { version = "0.18", default-features = false }
 
 [dev-dependencies]
@@ -20,6 +18,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 approx = "0.5"
 ndarray = "0.16"
 ndarray-stats = "0.6"
+faer = "0.21"
 
 [[bench]]
 name = "stats_bench"
