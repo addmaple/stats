@@ -247,3 +247,110 @@ const { q1, q2, q3 } = quartiles(responseTimes);
 console.log(`Distribution: Q1=${q1}, Median=${q2}, Q3=${q3}`);
 ```
 
+## Weighted Quantiles
+
+When observations have different importance or frequency weights, use weighted quantiles instead of regular quantiles. This is common in survey data, aggregated statistics, or any scenario where values represent different numbers of observations.
+
+### Basic Weighted Percentile
+
+```js
+import { init, weightedPercentile } from '@addmaple/stats';
+
+await init();
+
+const values = [1, 2, 3, 4, 5];
+const weights = [1, 1, 1, 1, 5]; // Value 5 has 5x more weight
+
+// Weighted median - pulled toward 5 due to higher weight
+const median = weightedPercentile(values, weights, 0.5);
+console.log(`Weighted median: ${median}`); // ~4.3
+
+// Compare with equal weights (behaves like regular percentile)
+const equalWeights = [1, 1, 1, 1, 1];
+const regularMedian = weightedPercentile(values, equalWeights, 0.5);
+console.log(`Regular median: ${regularMedian}`); // 3
+```
+
+### Weighted Median
+
+```js
+import { init, weightedMedian } from '@addmaple/stats';
+
+await init();
+
+// Survey data: respondent ages with sampling weights
+const ages = [25, 35, 45, 55, 65];
+const sampleWeights = [100, 150, 200, 120, 80];
+
+const medianAge = weightedMedian(ages, sampleWeights);
+console.log(`Weighted median age: ${medianAge}`);
+```
+
+### Multiple Weighted Quantiles
+
+```js
+import { init, weightedQuantiles } from '@addmaple/stats';
+
+await init();
+
+const income = [20000, 40000, 60000, 80000, 100000];
+const population = [1000, 800, 500, 300, 100]; // More people earn less
+
+// Calculate weighted quartiles
+const [q1, median, q3] = weightedQuantiles(income, population, [0.25, 0.5, 0.75]);
+console.log(`Q1: $${q1.toLocaleString()}`);
+console.log(`Median: $${median.toLocaleString()}`);
+console.log(`Q3: $${q3.toLocaleString()}`);
+// Results weighted toward lower incomes due to population distribution
+```
+
+### Weighted Income Distribution
+
+```js
+import { init, weightedPercentile, weightedQuantiles } from '@addmaple/stats';
+
+await init();
+
+// Income brackets with population counts (aggregated census data)
+const incomes = [15000, 25000, 35000, 50000, 75000, 100000, 150000, 250000];
+const householdCounts = [2000, 5000, 8000, 6000, 4000, 2500, 1000, 500];
+
+// Calculate weighted percentiles
+const p10 = weightedPercentile(incomes, householdCounts, 0.1);
+const p50 = weightedPercentile(incomes, householdCounts, 0.5);
+const p90 = weightedPercentile(incomes, householdCounts, 0.9);
+
+console.log(`10th percentile income: $${p10.toLocaleString()}`);
+console.log(`Median income: $${p50.toLocaleString()}`);
+console.log(`90th percentile income: $${p90.toLocaleString()}`);
+
+// Get all deciles at once
+const decilePoints = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+const deciles = weightedQuantiles(incomes, householdCounts, decilePoints);
+console.log('Income deciles:', Array.from(deciles).map(d => `$${d.toLocaleString()}`));
+```
+
+### Survey Response Analysis
+
+```js
+import { init, weightedMedian, weightedQuantiles } from '@addmaple/stats';
+
+await init();
+
+// Survey responses with frequency weights
+// (Each response represents multiple respondents with same answer)
+const satisfactionScores = [1, 2, 3, 4, 5]; // 1-5 scale
+const responseFrequencies = [50, 80, 200, 150, 120]; // Number of people
+
+const medianSatisfaction = weightedMedian(satisfactionScores, responseFrequencies);
+console.log(`Median satisfaction: ${medianSatisfaction.toFixed(2)}`);
+
+// Get quartiles for box plot
+const [q1, q2, q3] = weightedQuantiles(
+  satisfactionScores, 
+  responseFrequencies, 
+  [0.25, 0.5, 0.75]
+);
+console.log(`Satisfaction quartiles: Q1=${q1.toFixed(2)}, Q2=${q2.toFixed(2)}, Q3=${q3.toFixed(2)}`);
+```
+
