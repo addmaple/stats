@@ -128,3 +128,6 @@ async function safeMean(data) {
 - The WASM module is small (~50-100KB gzipped)
 - Once initialized, function calls are extremely fast
 
+
+
+

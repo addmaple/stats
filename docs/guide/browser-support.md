@@ -73,3 +73,6 @@ TypeScript definitions are included. No additional configuration needed:
 import { init, mean } from '@addmaple/stats';
 ```
 
+
+
+

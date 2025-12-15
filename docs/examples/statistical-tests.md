@@ -183,3 +183,6 @@ const group2 = [20, 22, 24, 21, 23];
 interpretAnova([group1, group2]);
 ```
 
+
+
+

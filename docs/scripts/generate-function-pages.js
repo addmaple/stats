@@ -22,7 +22,7 @@ const functionCategories = {
   'correlation-covariance': ['covariance', 'corrcoeff', 'spearmancoeff'],
   'distributions': ['normal', 'gamma', 'beta', 'studentT', 'chiSquared', 'fisherF', 'exponential', 'poisson', 'binomial', 'uniform', 'cauchy', 'laplace', 'logNormal', 'weibull', 'pareto', 'triangular', 'inverseGamma', 'negativeBinomial'],
   'statistical-tests': ['anovaFScore', 'anovaTest', 'anovaFScoreCategorical', 'anovaTestCategorical', 'chiSquareTest', 'ttest', 'ztest'],
-  'transformations': ['cumsum', 'cumprod', 'diff', 'rank', 'histogram', 'histogramEdges', 'cumreduce'],
+  'transformations': ['cumsum', 'cumprod', 'diff', 'rank', 'histogram', 'histogramEdges', 'histogramBinning', 'cumreduce'],
   'regression': ['regress', 'normalci', 'tci'],
 };
 
