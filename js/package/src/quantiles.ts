@@ -3,32 +3,13 @@ import {
   copyToWasmMemory,
   readWasmArray,
   loadWasmModule,
-  ArrayResult,
-} from './shared';
-
-interface QuantilesWasmModule {
-  get_memory(): WebAssembly.Memory;
-  alloc_f64(len: number): number;
-  free_f64(ptr: number, len: number): void;
-  percentile_f64(ptr: number, len: number, k: number, exclusive: boolean): number;
-  percentile_inclusive_f64(ptr: number, len: number, k: number): number;
-  percentile_exclusive_f64(ptr: number, len: number, k: number): number;
-  percentile_of_score_f64(ptr: number, len: number, score: number, strict: boolean): number;
-  quartiles_f64(ptr: number, len: number): { q1: number; q2: number; q3: number };
-  iqr_f64(ptr: number, len: number): number;
-  quantiles_f64(dataPtr: number, dataLen: number, qsPtr: number, qsLen: number): ArrayResult;
-  histogram_f64(ptr: number, len: number, binCount: number): ArrayResult;
-  histogram_edges_f64(dataPtr: number, dataLen: number, edgesPtr: number, edgesLen: number): ArrayResult;
-}
+  createRequireWasm,
+} from './shared.js';
+import type { ArrayResult, QuantilesWasmModule } from './wasm-types.js';
 
 let wasmModule: QuantilesWasmModule | null = null;
 
-function requireWasm(): QuantilesWasmModule {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
-  return wasmModule;
-}
+const requireWasm = createRequireWasm(() => wasmModule);
 
 export async function init(): Promise<void> {
   if (wasmModule) {
@@ -39,66 +20,58 @@ export async function init(): Promise<void> {
 }
 
 export function percentile(data: ArrayLike<number>, k: number, exclusive: boolean = false): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return NaN;
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.percentile_f64(ptr, len, k, exclusive);
-  wasmModule.free_f64(ptr, len);
+  const result = wasm.percentile_f64(ptr, len, k, exclusive);
+  wasm.free_f64(ptr, len);
   return result;
 }
 
 export function percentileInclusive(data: ArrayLike<number>, k: number): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return NaN;
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.percentile_inclusive_f64(ptr, len, k);
-  wasmModule.free_f64(ptr, len);
+  const result = wasm.percentile_inclusive_f64(ptr, len, k);
+  wasm.free_f64(ptr, len);
   return result;
 }
 
 export function percentileExclusive(data: ArrayLike<number>, k: number): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return NaN;
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.percentile_exclusive_f64(ptr, len, k);
-  wasmModule.free_f64(ptr, len);
+  const result = wasm.percentile_exclusive_f64(ptr, len, k);
+  wasm.free_f64(ptr, len);
   return result;
 }
 
 export function percentileOfScore(data: ArrayLike<number>, score: number, strict: boolean = false): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return NaN;
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.percentile_of_score_f64(ptr, len, score, strict);
-  wasmModule.free_f64(ptr, len);
+  const result = wasm.percentile_of_score_f64(ptr, len, score, strict);
+  wasm.free_f64(ptr, len);
   return result;
 }
 
@@ -108,35 +81,31 @@ export interface QuartilesResult {
   q3: number;
 }
 
-export function quartiles(data: ArrayLike<number>): QuartilesResult {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+export function quartiles(data: ArrayLike<number>): [number, number, number] {
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
-    return { q1: NaN, q2: NaN, q3: NaN };
+    return [NaN, NaN, NaN];
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.quartiles_f64(ptr, len);
-  wasmModule.free_f64(ptr, len);
-  return result;
+  const result = wasm.quartiles_f64(ptr, len);
+  wasm.free_f64(ptr, len);
+  return [result.q1, result.q2, result.q3];
 }
 
 export function iqr(data: ArrayLike<number>): number {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return NaN;
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.iqr_f64(ptr, len);
-  wasmModule.free_f64(ptr, len);
+  const result = wasm.iqr_f64(ptr, len);
+  wasm.free_f64(ptr, len);
   return result;
 }
 
@@ -147,67 +116,60 @@ export function percentiles(
   return quantiles(data, ps);
 }
 
-export function quantiles(data: ArrayLike<number>, quantiles: ArrayLike<number>): Float64Array {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+export function quantiles(data: ArrayLike<number>, quantilesArr: ArrayLike<number>): Float64Array {
+  const wasm = requireWasm();
   const dataLen = data.length;
-  const qsLen = quantiles.length;
+  const qsLen = quantilesArr.length;
   if (dataLen === 0 || qsLen === 0) {
     return new Float64Array();
   }
-  const dataPtr = wasmModule.alloc_f64(dataLen);
-  const qsPtr = wasmModule.alloc_f64(qsLen);
-  const dataView = f64View(dataPtr, dataLen, wasmModule.get_memory());
-  const qsView = f64View(qsPtr, qsLen, wasmModule.get_memory());
+  const dataPtr = wasm.alloc_f64(dataLen);
+  const qsPtr = wasm.alloc_f64(qsLen);
+  const dataView = f64View(dataPtr, dataLen, wasm.get_memory());
+  const qsView = f64View(qsPtr, qsLen, wasm.get_memory());
   copyToWasmMemory(data, dataView);
-  copyToWasmMemory(quantiles, qsView);
-  const result = wasmModule.quantiles_f64(dataPtr, dataLen, qsPtr, qsLen);
-  const output = readWasmArray(result, wasmModule.get_memory());
-  wasmModule.free_f64(dataPtr, dataLen);
-  wasmModule.free_f64(qsPtr, qsLen);
-  wasmModule.free_f64(result.ptr, result.len);
+  copyToWasmMemory(quantilesArr, qsView);
+  const result = wasm.quantiles_f64(dataPtr, dataLen, qsPtr, qsLen);
+  const output = readWasmArray(result, wasm.get_memory());
+  wasm.free_f64(dataPtr, dataLen);
+  wasm.free_f64(qsPtr, qsLen);
+  wasm.free_f64(result.ptr, result.len);
   return output;
 }
 
 export function histogram(data: ArrayLike<number>, binCount: number): Float64Array {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const len = data.length;
   if (len === 0) {
     return new Float64Array();
   }
-  const ptr = wasmModule.alloc_f64(len);
-  const view = f64View(ptr, len, wasmModule.get_memory());
+  const ptr = wasm.alloc_f64(len);
+  const view = f64View(ptr, len, wasm.get_memory());
   copyToWasmMemory(data, view);
-  const result = wasmModule.histogram_f64(ptr, len, binCount);
-  const output = readWasmArray(result, wasmModule.get_memory());
-  wasmModule.free_f64(ptr, len);
-  wasmModule.free_f64(result.ptr, result.len);
+  const result = wasm.histogram_f64(ptr, len, binCount);
+  const output = readWasmArray(result, wasm.get_memory());
+  wasm.free_f64(ptr, len);
+  wasm.free_f64(result.ptr, result.len);
   return output;
 }
 
 export function histogramEdges(data: ArrayLike<number>, edges: ArrayLike<number>): Float64Array {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
+  const wasm = requireWasm();
   const dataLen = data.length;
   const edgesLen = edges.length;
   if (dataLen === 0 || edgesLen === 0) {
     return new Float64Array();
   }
-  const dataPtr = wasmModule.alloc_f64(dataLen);
-  const edgesPtr = wasmModule.alloc_f64(edgesLen);
-  const dataView = f64View(dataPtr, dataLen, wasmModule.get_memory());
-  const edgesView = f64View(edgesPtr, edgesLen, wasmModule.get_memory());
+  const dataPtr = wasm.alloc_f64(dataLen);
+  const edgesPtr = wasm.alloc_f64(edgesLen);
+  const dataView = f64View(dataPtr, dataLen, wasm.get_memory());
+  const edgesView = f64View(edgesPtr, edgesLen, wasm.get_memory());
   copyToWasmMemory(data, dataView);
   copyToWasmMemory(edges, edgesView);
-  const result = wasmModule.histogram_edges_f64(dataPtr, dataLen, edgesPtr, edgesLen);
-  const output = readWasmArray(result, wasmModule.get_memory());
-  wasmModule.free_f64(dataPtr, dataLen);
-  wasmModule.free_f64(edgesPtr, edgesLen);
-  wasmModule.free_f64(result.ptr, result.len);
+  const result = wasm.histogram_edges_f64(dataPtr, dataLen, edgesPtr, edgesLen);
+  const output = readWasmArray(result, wasm.get_memory());
+  wasm.free_f64(dataPtr, dataLen);
+  wasm.free_f64(edgesPtr, edgesLen);
+  wasm.free_f64(result.ptr, result.len);
   return output;
 }
-

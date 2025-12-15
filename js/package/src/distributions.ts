@@ -1,116 +1,14 @@
 import {
-  f64View,
-  copyToWasmMemory,
   runUnaryArrayOp,
   loadWasmModule,
+  createRequireWasm,
   ArrayKernel,
-} from './shared';
-
-// Distributions-specific WASM module interface
-interface DistributionsWasmModule {
-  get_memory(): WebAssembly.Memory;
-  alloc_f64(len: number): number;
-  free_f64(ptr: number, len: number): void;
-  normal_pdf_scalar(x: number, mean: number, sd: number): number;
-  normal_cdf_scalar(x: number, mean: number, sd: number): number;
-  normal_inv_scalar(p: number, mean: number, sd: number): number;
-  normal_pdf_inplace(inputPtr: number, len: number, mean: number, sd: number, outputPtr: number): void;
-  normal_cdf_inplace(inputPtr: number, len: number, mean: number, sd: number, outputPtr: number): void;
-  gamma_pdf_scalar(x: number, shape: number, rate: number): number;
-  gamma_cdf_scalar(x: number, shape: number, rate: number): number;
-  gamma_inv_scalar(p: number, shape: number, rate: number): number;
-  gamma_pdf_inplace(inputPtr: number, len: number, shape: number, rate: number, outputPtr: number): void;
-  gamma_cdf_inplace(inputPtr: number, len: number, shape: number, rate: number, outputPtr: number): void;
-  beta_pdf_scalar(x: number, alpha: number, beta: number): number;
-  beta_cdf_scalar(x: number, alpha: number, beta: number): number;
-  beta_inv_scalar(p: number, alpha: number, beta: number): number;
-  beta_pdf_inplace(inputPtr: number, len: number, alpha: number, beta: number, outputPtr: number): void;
-  beta_cdf_inplace(inputPtr: number, len: number, alpha: number, beta: number, outputPtr: number): void;
-  student_t_pdf_scalar(x: number, mean: number, scale: number, dof: number): number;
-  student_t_cdf_scalar(x: number, mean: number, scale: number, dof: number): number;
-  student_t_inv_scalar(p: number, mean: number, scale: number, dof: number): number;
-  student_t_pdf_inplace(inputPtr: number, len: number, mean: number, scale: number, dof: number, outputPtr: number): void;
-  student_t_cdf_inplace(inputPtr: number, len: number, mean: number, scale: number, dof: number, outputPtr: number): void;
-  chi_squared_pdf_scalar(x: number, dof: number): number;
-  chi_squared_cdf_scalar(x: number, dof: number): number;
-  chi_squared_inv_scalar(p: number, dof: number): number;
-  chi_squared_pdf_inplace(inputPtr: number, len: number, dof: number, outputPtr: number): void;
-  chi_squared_cdf_inplace(inputPtr: number, len: number, dof: number, outputPtr: number): void;
-  fisher_f_pdf_scalar(x: number, df1: number, df2: number): number;
-  fisher_f_cdf_scalar(x: number, df1: number, df2: number): number;
-  fisher_f_inv_scalar(p: number, df1: number, df2: number): number;
-  fisher_f_pdf_inplace(inputPtr: number, len: number, df1: number, df2: number, outputPtr: number): void;
-  fisher_f_cdf_inplace(inputPtr: number, len: number, df1: number, df2: number, outputPtr: number): void;
-  exponential_pdf_scalar(x: number, rate: number): number;
-  exponential_cdf_scalar(x: number, rate: number): number;
-  exponential_inv_scalar(p: number, rate: number): number;
-  exponential_pdf_inplace(inputPtr: number, len: number, rate: number, outputPtr: number): void;
-  exponential_cdf_inplace(inputPtr: number, len: number, rate: number, outputPtr: number): void;
-  poisson_pmf_scalar(k: number, lambda: number): number;
-  poisson_cdf_scalar(k: number, lambda: number): number;
-  poisson_inv_scalar(p: number, lambda: number): number;
-  poisson_pmf_inplace(inputPtr: number, len: number, lambda: number, outputPtr: number): void;
-  poisson_cdf_inplace(inputPtr: number, len: number, lambda: number, outputPtr: number): void;
-  binomial_pmf_scalar(k: number, n: number, p: number): number;
-  binomial_cdf_scalar(k: number, n: number, p: number): number;
-  binomial_inv_scalar(prob: number, n: number, p: number): number;
-  binomial_pmf_inplace(inputPtr: number, len: number, n: number, p: number, outputPtr: number): void;
-  binomial_cdf_inplace(inputPtr: number, len: number, n: number, p: number, outputPtr: number): void;
-  uniform_pdf_scalar(x: number, min: number, max: number): number;
-  uniform_cdf_scalar(x: number, min: number, max: number): number;
-  uniform_inv_scalar(p: number, min: number, max: number): number;
-  uniform_pdf_inplace(inputPtr: number, len: number, min: number, max: number, outputPtr: number): void;
-  uniform_cdf_inplace(inputPtr: number, len: number, min: number, max: number, outputPtr: number): void;
-  cauchy_pdf_scalar(x: number, location: number, scale: number): number;
-  cauchy_cdf_scalar(x: number, location: number, scale: number): number;
-  cauchy_inv_scalar(p: number, location: number, scale: number): number;
-  cauchy_pdf_inplace(inputPtr: number, len: number, location: number, scale: number, outputPtr: number): void;
-  cauchy_cdf_inplace(inputPtr: number, len: number, location: number, scale: number, outputPtr: number): void;
-  laplace_pdf_scalar(x: number, location: number, scale: number): number;
-  laplace_cdf_scalar(x: number, location: number, scale: number): number;
-  laplace_inv_scalar(p: number, location: number, scale: number): number;
-  laplace_pdf_inplace(inputPtr: number, len: number, location: number, scale: number, outputPtr: number): void;
-  laplace_cdf_inplace(inputPtr: number, len: number, location: number, scale: number, outputPtr: number): void;
-  lognormal_pdf_scalar(x: number, mean: number, sd: number): number;
-  lognormal_cdf_scalar(x: number, mean: number, sd: number): number;
-  lognormal_inv_scalar(p: number, mean: number, sd: number): number;
-  lognormal_pdf_inplace(inputPtr: number, len: number, mean: number, sd: number, outputPtr: number): void;
-  lognormal_cdf_inplace(inputPtr: number, len: number, mean: number, sd: number, outputPtr: number): void;
-  weibull_pdf_scalar(x: number, shape: number, scale: number): number;
-  weibull_cdf_scalar(x: number, shape: number, scale: number): number;
-  weibull_inv_scalar(p: number, shape: number, scale: number): number;
-  weibull_pdf_inplace(inputPtr: number, len: number, shape: number, scale: number, outputPtr: number): void;
-  weibull_cdf_inplace(inputPtr: number, len: number, shape: number, scale: number, outputPtr: number): void;
-  pareto_pdf_scalar(x: number, scale: number, shape: number): number;
-  pareto_cdf_scalar(x: number, scale: number, shape: number): number;
-  pareto_inv_scalar(p: number, scale: number, shape: number): number;
-  pareto_pdf_inplace(inputPtr: number, len: number, scale: number, shape: number, outputPtr: number): void;
-  pareto_cdf_inplace(inputPtr: number, len: number, scale: number, shape: number, outputPtr: number): void;
-  triangular_pdf_scalar(x: number, min: number, max: number, mode: number): number;
-  triangular_cdf_scalar(x: number, min: number, max: number, mode: number): number;
-  triangular_inv_scalar(p: number, min: number, max: number, mode: number): number;
-  triangular_pdf_inplace(inputPtr: number, len: number, min: number, max: number, mode: number, outputPtr: number): void;
-  triangular_cdf_inplace(inputPtr: number, len: number, min: number, max: number, mode: number, outputPtr: number): void;
-  invgamma_pdf_scalar(x: number, shape: number, rate: number): number;
-  invgamma_cdf_scalar(x: number, shape: number, rate: number): number;
-  invgamma_inv_scalar(p: number, shape: number, rate: number): number;
-  invgamma_pdf_inplace(inputPtr: number, len: number, shape: number, rate: number, outputPtr: number): void;
-  invgamma_cdf_inplace(inputPtr: number, len: number, shape: number, rate: number, outputPtr: number): void;
-  negbin_pmf_scalar(k: number, r: number, p: number): number;
-  negbin_cdf_scalar(k: number, r: number, p: number): number;
-  negbin_inv_scalar(prob: number, r: number, p: number): number;
-  negbin_pmf_inplace(inputPtr: number, len: number, r: number, p: number, outputPtr: number): void;
-  negbin_cdf_inplace(inputPtr: number, len: number, r: number, p: number, outputPtr: number): void;
-}
+} from './shared.js';
+import type { DistributionsWasmModule } from './wasm-types.js';
 
 let wasmModule: DistributionsWasmModule | null = null;
 
-function requireWasm(): DistributionsWasmModule {
-  if (!wasmModule) {
-    throw new Error('Wasm module not initialized. Call init() first.');
-  }
-  return wasmModule;
-}
+const requireWasm = createRequireWasm(() => wasmModule);
 
 export async function init(): Promise<void> {
   if (wasmModule) {
@@ -142,10 +40,12 @@ function buildDistribution(bindings: DistributionBindings): DistributionHandle {
     cdf: bindings.cdfScalar,
     inv: bindings.invScalar,
     pdfArray(data: ArrayLike<number>) {
-      return runUnaryArrayOp(data, bindings.pdfKernel, requireWasm(), requireWasm().get_memory());
+      const wasm = requireWasm();
+      return runUnaryArrayOp(data, bindings.pdfKernel, wasm, wasm.get_memory());
     },
     cdfArray(data: ArrayLike<number>) {
-      return runUnaryArrayOp(data, bindings.cdfKernel, requireWasm(), requireWasm().get_memory());
+      const wasm = requireWasm();
+      return runUnaryArrayOp(data, bindings.cdfKernel, wasm, wasm.get_memory());
     },
   };
 }
@@ -474,4 +374,3 @@ export function negativeBinomial(params: NegativeBinomialParams = {}): Distribut
     cdfKernel: (inputPtr, len, outputPtr) => wasm.negbin_cdf_inplace(inputPtr, len, r, p, outputPtr),
   });
 }
-

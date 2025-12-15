@@ -5,6 +5,11 @@ interface ArrayResult {
   len: number;
 }
 
+interface HistogramWithEdgesResult {
+  edges: ArrayResult;
+  counts: ArrayResult;
+}
+
 /**
  * Full descriptive statistics snapshot for a numeric array.
  *
@@ -60,6 +65,8 @@ interface WasmModule {
   get_memory(): WebAssembly.Memory;
   alloc_f64(len: number): number;
   free_f64(ptr: number, len: number): void;
+  alloc_f32(len: number): number;
+  free_f32(ptr: number, len: number): void;
   sum_f64(ptr: number, len: number): number;
   mean_f64(ptr: number, len: number): number;
   variance_f64(ptr: number, len: number): number;
@@ -116,6 +123,27 @@ interface WasmModule {
     qsPtr: number,
     qsLen: number
   ): ArrayResult;
+  weighted_percentile_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number,
+    p: number
+  ): number;
+  weighted_quantiles_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number,
+    qsPtr: number,
+    qsLen: number
+  ): ArrayResult;
+  weighted_median_f64(
+    dataPtr: number,
+    dataLen: number,
+    weightsPtr: number,
+    weightsLen: number
+  ): number;
   histogram_f64(ptr: number, len: number, binCount: number): ArrayResult;
   histogram_edges_f64(
     dataPtr: number,
@@ -123,6 +151,36 @@ interface WasmModule {
     edgesPtr: number,
     edgesLen: number
   ): ArrayResult;
+  histogram_fixed_width_with_edges_f64(
+    ptr: number,
+    len: number,
+    bins: number
+  ): HistogramWithEdgesResult;
+  histogram_equal_frequency_with_edges_f64(
+    ptr: number,
+    len: number,
+    bins: number
+  ): HistogramWithEdgesResult;
+  histogram_auto_with_edges_f64(
+    ptr: number,
+    len: number,
+    rule: number,
+    binsOverride: number
+  ): HistogramWithEdgesResult;
+  histogram_auto_with_edges_collapse_tails_f64(
+    ptr: number,
+    len: number,
+    rule: number,
+    binsOverride: number,
+    k: number
+  ): HistogramWithEdgesResult;
+  histogram_custom_with_edges_f64(
+    dataPtr: number,
+    dataLen: number,
+    edgesPtr: number,
+    edgesLen: number,
+    clampOutside: boolean
+  ): HistogramWithEdgesResult;
   covariance_f64(
     xPtr: number,
     xLen: number,
@@ -382,6 +440,48 @@ interface WasmModule {
   ttest_f64(dataPtr: number, len: number, mu0: number): TestResult;
   ztest_f64(dataPtr: number, len: number, mu0: number, sigma: number): TestResult;
   regress_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_naive_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_simd_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_wasm_kernels_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_naive_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_simd_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_wasm_kernels_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_naive_residuals_inplace_f64(
+    xPtr: number,
+    xLen: number,
+    yPtr: number,
+    yLen: number,
+    residualsOutPtr: number
+  ): RegressionCoeffs;
+  regress_simd_residuals_inplace_f64(
+    xPtr: number,
+    xLen: number,
+    yPtr: number,
+    yLen: number,
+    residualsOutPtr: number
+  ): RegressionCoeffs;
+  regress_wasm_kernels_residuals_inplace_f64(
+    xPtr: number,
+    xLen: number,
+    yPtr: number,
+    yLen: number,
+    residualsOutPtr: number
+  ): RegressionCoeffs;
+  // f32 regression (SIMD-focused)
+  regress_simd_coeffs_f32(
+    xPtr: number,
+    xLen: number,
+    yPtr: number,
+    yLen: number
+  ): { slope: number; intercept: number; r_squared: number };
+  regress_simd_residuals_inplace_f32(
+    xPtr: number,
+    xLen: number,
+    yPtr: number,
+    yLen: number,
+    residualsOutPtr: number
+  ): { slope: number; intercept: number; r_squared: number };
   // Confidence Intervals
   normalci_f64(alpha: number, mean: number, se: number): Float64Array;
   tci_f64(alpha: number, mean: number, stdev: number, n: number): Float64Array;
@@ -405,6 +505,18 @@ export interface RegressionResult {
   intercept: number;
   r_squared: number;
   residuals: Float64Array;
+}
+
+export interface RegressionCoeffs {
+  slope: number;
+  intercept: number;
+  r_squared: number;
+}
+
+export interface RegressionCoeffsF32 {
+  slope: number;
+  intercept: number;
+  r_squared: number;
 }
 
 let wasmModule: WasmModule | null = null;
@@ -454,6 +566,12 @@ function f64View(ptr: number, len: number): Float64Array {
   return new Float64Array(memory.buffer, ptr, len);
 }
 
+function f32View(ptr: number, len: number): Float32Array {
+  const wasm = requireWasm();
+  const memory = wasm.get_memory();
+  return new Float32Array(memory.buffer, ptr, len);
+}
+
 /**
  * Helper to efficiently copy data to WASM memory
  */
@@ -478,6 +596,24 @@ function copyToWasmMemory(data: ArrayLike<number>, view: Float64Array): void {
     } else {
       for (let i = 0; i < data.length; i++) {
         view[i] = data[i];
+      }
+    }
+  }
+}
+
+function copyToWasmMemoryF32(data: ArrayLike<number>, view: Float32Array): void {
+  if (data instanceof Float32Array) {
+    view.set(data);
+  } else if (data instanceof Array) {
+    // Converts numbers to f32 on assignment
+    view.set(data as number[]);
+  } else {
+    const len = data.length;
+    try {
+      view.set(data as any);
+    } catch {
+      for (let i = 0; i < len; i++) {
+        view[i] = data[i] as number;
       }
     }
   }
@@ -2088,6 +2224,189 @@ export function iqr(data: ArrayLike<number>): number {
   return result;
 }
 
+// =============================================================================
+// Weighted Quantiles
+// =============================================================================
+
+/**
+ * Calculate a weighted percentile using linear interpolation.
+ * 
+ * Uses the cumulative weight method: sorts data by value, computes cumulative
+ * weights, normalizes to [0, 1], and interpolates to find the value at the
+ * desired quantile position.
+ * 
+ * **When to use:** When observations have different importance or frequency weights,
+ * such as survey data with sampling weights, or aggregated data where each value
+ * represents multiple observations.
+ * 
+ * @param data - Input array of values
+ * @param weights - Array of weights (must be same length as data, all non-negative)
+ * @param p - Percentile value between 0.0 and 1.0 (e.g., 0.5 for weighted median)
+ * @returns The interpolated weighted percentile value, or NaN for invalid inputs
+ * 
+ * @example
+ * ```js
+ * import { init, weightedPercentile } from '@addmaple/stats';
+ * await init();
+ * 
+ * const values = [1, 2, 3, 4, 5];
+ * const weights = [1, 1, 1, 1, 5];  // Value 5 has 5x more weight
+ * 
+ * // Weighted median - will be pulled toward 5 due to its higher weight
+ * const median = weightedPercentile(values, weights, 0.5);
+ * console.log(median); // ~4.5
+ * 
+ * // Compare with equal weights (regular percentile behavior)
+ * const equalWeights = [1, 1, 1, 1, 1];
+ * const regularMedian = weightedPercentile(values, equalWeights, 0.5);
+ * console.log(regularMedian); // 3
+ * ```
+ */
+export function weightedPercentile(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  p: number
+): number {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+
+  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
+    return NaN;
+  }
+
+  const dataPtr = wasmModule.alloc_f64(dataLen);
+  const weightsPtr = wasmModule.alloc_f64(weightsLen);
+  const dataView = f64View(dataPtr, dataLen);
+  const weightsView = f64View(weightsPtr, weightsLen);
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+
+  const result = wasmModule.weighted_percentile_f64(dataPtr, dataLen, weightsPtr, weightsLen, p);
+  wasmModule.free_f64(dataPtr, dataLen);
+  wasmModule.free_f64(weightsPtr, weightsLen);
+
+  return result;
+}
+
+/**
+ * Calculate multiple weighted quantiles at once.
+ * 
+ * More efficient than calling `weightedPercentile` multiple times when you need
+ * several weighted quantiles from the same dataset.
+ * 
+ * @param data - Input array of values
+ * @param weights - Array of weights (must be same length as data, all non-negative)
+ * @param qs - Array of quantile values between 0.0 and 1.0
+ * @returns Array of weighted quantile values in the same order as qs
+ * 
+ * @example
+ * ```js
+ * import { init, weightedQuantiles } from '@addmaple/stats';
+ * await init();
+ * 
+ * const income = [20000, 40000, 60000, 80000, 100000];
+ * const population = [1000, 800, 500, 300, 100];  // More people earn less
+ * 
+ * // Calculate weighted quartiles
+ * const [q1, median, q3] = weightedQuantiles(income, population, [0.25, 0.5, 0.75]);
+ * // Results will be weighted toward lower incomes
+ * ```
+ */
+export function weightedQuantiles(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  qs: ArrayLike<number>
+): Float64Array {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+  const qsLen = qs.length;
+
+  if (dataLen === 0 || weightsLen === 0 || qsLen === 0 || dataLen !== weightsLen) {
+    return new Float64Array(qsLen).fill(NaN);
+  }
+
+  const dataPtr = wasmModule.alloc_f64(dataLen);
+  const weightsPtr = wasmModule.alloc_f64(weightsLen);
+  const qsPtr = wasmModule.alloc_f64(qsLen);
+  const dataView = f64View(dataPtr, dataLen);
+  const weightsView = f64View(weightsPtr, weightsLen);
+  const qsView = f64View(qsPtr, qsLen);
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+  copyToWasmMemory(qs, qsView);
+
+  const result = wasmModule.weighted_quantiles_f64(
+    dataPtr, dataLen,
+    weightsPtr, weightsLen,
+    qsPtr, qsLen
+  );
+  wasmModule.free_f64(dataPtr, dataLen);
+  wasmModule.free_f64(weightsPtr, weightsLen);
+  wasmModule.free_f64(qsPtr, qsLen);
+
+  return readWasmArray(result);
+}
+
+/**
+ * Calculate the weighted median (50th weighted percentile).
+ * 
+ * The weighted median is the value that divides the total weight in half.
+ * This is a convenience function equivalent to `weightedPercentile(data, weights, 0.5)`.
+ * 
+ * @param data - Input array of values
+ * @param weights - Array of weights (must be same length as data)
+ * @returns The weighted median value
+ * 
+ * @example
+ * ```js
+ * import { init, weightedMedian } from '@addmaple/stats';
+ * await init();
+ * 
+ * // Survey data: respondent ages with sampling weights
+ * const ages = [25, 35, 45, 55, 65];
+ * const sampleWeights = [100, 150, 200, 120, 80];
+ * 
+ * const medianAge = weightedMedian(ages, sampleWeights);
+ * console.log(medianAge); // Weighted toward middle ages due to higher weights
+ * ```
+ */
+export function weightedMedian(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>
+): number {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const dataLen = data.length;
+  const weightsLen = weights.length;
+
+  if (dataLen === 0 || weightsLen === 0 || dataLen !== weightsLen) {
+    return NaN;
+  }
+
+  const dataPtr = wasmModule.alloc_f64(dataLen);
+  const weightsPtr = wasmModule.alloc_f64(weightsLen);
+  const dataView = f64View(dataPtr, dataLen);
+  const weightsView = f64View(weightsPtr, weightsLen);
+  copyToWasmMemory(data, dataView);
+  copyToWasmMemory(weights, weightsView);
+
+  const result = wasmModule.weighted_median_f64(dataPtr, dataLen, weightsPtr, weightsLen);
+  wasmModule.free_f64(dataPtr, dataLen);
+  wasmModule.free_f64(weightsPtr, weightsLen);
+
+  return result;
+}
+
 /**
  * Calculate a rich set of descriptive statistics for an array in one call.
  *
@@ -2287,6 +2606,289 @@ export function histogramEdges(
 
   return readWasmArray(result);
 }
+
+/**
+ * Bin option configuration for advanced histogram binning strategies.
+ */
+export interface BinOption {
+  /** Binning mode: "auto", "equalFrequency", "fixedWidth", "custom" */
+  mode: 'auto' | 'equalFrequency' | 'fixedWidth' | 'custom';
+  /** Statistical rule for auto mode: "FD" (Freedman-Diaconis), "Scott", "sqrtN" */
+  rule?: 'FD' | 'Scott' | 'sqrtN';
+  /** Tail collapse settings for auto mode */
+  collapseTails?: {
+    enabled: boolean;
+    /** IQR multiplier for outlier detection (default: 1.5) */
+    k?: number;
+  };
+  /** Number of bins for equalFrequency/fixedWidth modes, or override for auto mode */
+  bins?: number;
+  /** Custom bin edges for custom mode */
+  edges?: number[] | Float64Array;
+}
+
+/**
+ * Result of histogram binning with edges and counts.
+ */
+export interface HistogramBinningResult {
+  /** Bin edges (length = counts.length + 1) */
+  edges: Float64Array;
+  /** Counts per bin (length = number of bins) */
+  counts: Float64Array;
+}
+
+/**
+ * Calculate histogram using advanced binning strategies.
+ * 
+ * Supports multiple binning modes:
+ * - **auto**: Automatic binning using statistical rules (FD, Scott, sqrtN)
+ * - **equalFrequency**: Quantile-based binning (each bin has roughly equal counts)
+ * - **fixedWidth**: Fixed-width bins (linear spacing from min to max)
+ * - **custom**: User-defined bin edges
+ * 
+ * @param data - Input array
+ * @param binSettings - Number of bins (legacy) or BinOption object
+ * @returns Object with `edges` and `counts` arrays
+ * 
+ * @example
+ * ```js
+ * import { init, histogramBinning } from '@stats/core';
+ * await init();
+ * 
+ * const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+ * 
+ * // Fixed-width binning
+ * const result1 = histogramBinning(data, { mode: 'fixedWidth', bins: 5 });
+ * 
+ * // Auto binning with Freedman-Diaconis rule
+ * const result2 = histogramBinning(data, { mode: 'auto', rule: 'FD' });
+ * 
+ * // Equal-frequency binning
+ * const result3 = histogramBinning(data, { mode: 'equalFrequency', bins: 4 });
+ * 
+ * // Custom edges
+ * const result4 = histogramBinning(data, { 
+ *   mode: 'custom', 
+ *   edges: [0, 3, 6, 10] 
+ * });
+ * 
+ * // Legacy: number of bins (treats as auto mode)
+ * const result5 = histogramBinning(data, 5);
+ * ```
+ */
+export function histogramBinning(
+  data: ArrayLike<number>,
+  binSettings: number | BinOption
+): HistogramBinningResult {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const dataLen = data.length;
+  if (dataLen === 0) {
+    return {
+      edges: new Float64Array(0),
+      counts: new Float64Array(0),
+    };
+  }
+
+  // Handle legacy numeric input - route to auto mode
+  let settings: BinOption;
+  if (typeof binSettings === 'number') {
+    settings = {
+      mode: 'auto',
+      rule: 'FD',
+      bins: binSettings,
+    };
+  } else {
+    settings = binSettings;
+  }
+
+  // Validate settings
+  if (!['auto', 'equalFrequency', 'fixedWidth', 'custom'].includes(settings.mode)) {
+    throw new Error(`Invalid binning mode: ${settings.mode}`);
+  }
+
+  if (settings.mode === 'equalFrequency' || settings.mode === 'fixedWidth') {
+    if (!settings.bins || settings.bins <= 0) {
+      throw new Error(`${settings.mode} mode requires bins > 0`);
+    }
+  }
+
+  if (settings.mode === 'custom') {
+    if (!settings.edges || settings.edges.length < 2) {
+      throw new Error('custom mode requires edges array with at least 2 elements');
+    }
+  }
+
+  const dataPtr = wasmModule.alloc_f64(dataLen);
+  const dataView = f64View(dataPtr, dataLen);
+  copyToWasmMemory(data, dataView);
+
+  let result: HistogramWithEdgesResult;
+  let edgesPtr: number | null = null;
+  let edgesLen = 0;
+
+  try {
+    switch (settings.mode) {
+      case 'fixedWidth': {
+        result = wasmModule.histogram_fixed_width_with_edges_f64(
+          dataPtr,
+          dataLen,
+          settings.bins!
+        );
+        break;
+      }
+      case 'equalFrequency': {
+        result = wasmModule.histogram_equal_frequency_with_edges_f64(
+          dataPtr,
+          dataLen,
+          settings.bins!
+        );
+        break;
+      }
+      case 'auto': {
+        const rule = settings.rule || 'FD';
+        const ruleCode = rule === 'FD' ? 0 : rule === 'Scott' ? 1 : 2;
+        const binsOverride = settings.bins || 0;
+
+        if (settings.collapseTails?.enabled) {
+          const k = settings.collapseTails.k ?? 1.5;
+          result = wasmModule.histogram_auto_with_edges_collapse_tails_f64(
+            dataPtr,
+            dataLen,
+            ruleCode,
+            binsOverride,
+            k
+          );
+        } else {
+          result = wasmModule.histogram_auto_with_edges_f64(
+            dataPtr,
+            dataLen,
+            ruleCode,
+            binsOverride
+          );
+        }
+        break;
+      }
+      case 'custom': {
+        const edges = settings.edges!;
+        // Sort edges if not already sorted
+        const sortedEdges = Array.from(edges).sort((a, b) => a - b);
+        edgesLen = sortedEdges.length;
+        edgesPtr = wasmModule.alloc_f64(edgesLen);
+        const edgesView = f64View(edgesPtr, edgesLen);
+        copyToWasmMemory(sortedEdges, edgesView);
+
+        result = wasmModule.histogram_custom_with_edges_f64(
+          dataPtr,
+          dataLen,
+          edgesPtr,
+          edgesLen,
+          false // Don't clamp by default for custom mode
+        );
+        break;
+      }
+    }
+
+    const edgesResult = result.edges;
+    const countsResult = result.counts;
+    const edges = readWasmArray(edgesResult);
+    const counts = readWasmArray(countsResult);
+
+    return { edges, counts };
+  } finally {
+    wasmModule.free_f64(dataPtr, dataLen);
+    if (edgesPtr !== null) {
+      wasmModule.free_f64(edgesPtr, edgesLen);
+    }
+  }
+}
+
+/**
+ * Utility functions to create common binning configurations.
+ */
+export const BinningPresets = {
+  /**
+   * Auto binning with Freedman-Diaconis rule
+   */
+  autoFD: (bins?: number): BinOption => ({
+    mode: 'auto',
+    rule: 'FD',
+    bins,
+  }),
+
+  /**
+   * Auto binning with Scott's rule
+   */
+  autoScott: (bins?: number): BinOption => ({
+    mode: 'auto',
+    rule: 'Scott',
+    bins,
+  }),
+
+  /**
+   * Auto binning with square root rule
+   */
+  autoSqrt: (bins?: number): BinOption => ({
+    mode: 'auto',
+    rule: 'sqrtN',
+    bins,
+  }),
+
+  /**
+   * Auto binning with tail collapse
+   */
+  autoWithTailCollapse: (k: number = 1.5, bins?: number): BinOption => ({
+    mode: 'auto',
+    rule: 'FD',
+    bins,
+    collapseTails: {
+      enabled: true,
+      k,
+    },
+  }),
+
+  /**
+   * Equal frequency (quantile) binning
+   */
+  equalFrequency: (bins: number = 10): BinOption => ({
+    mode: 'equalFrequency',
+    bins,
+  }),
+
+  /**
+   * Fixed width binning
+   */
+  fixedWidth: (bins: number = 10): BinOption => ({
+    mode: 'fixedWidth',
+    bins,
+  }),
+
+  /**
+   * Custom binning with user-defined edges
+   */
+  custom: (edges: number[] | Float64Array): BinOption => ({
+    mode: 'custom',
+    edges: [...edges].sort((a, b) => a - b), // Ensure sorted
+  }),
+
+  /**
+   * Deciles (10 equal frequency bins)
+   */
+  deciles: (): BinOption => ({
+    mode: 'equalFrequency',
+    bins: 10,
+  }),
+
+  /**
+   * Quartiles (4 equal frequency bins)
+   */
+  quartiles: (): BinOption => ({
+    mode: 'equalFrequency',
+    bins: 4,
+  }),
+};
 
 /**
  * Calculate the covariance between two arrays.
@@ -3464,6 +4066,428 @@ export function regress(
     r_squared: result.r_squared,
     residuals,
   };
+}
+
+/**
+ * Naive linear regression implementation (scalar, multi-pass).
+ * Intentionally non-optimized for performance comparison.
+ *
+ * @param x - Independent variable values
+ * @param y - Dependent variable values
+ * @returns Regression result with slope, intercept, R², and residuals
+ */
+export function regressNaive(
+  x: ArrayLike<number>,
+  y: ArrayLike<number>
+): RegressionResult {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const xLen = x.length;
+  const yLen = y.length;
+
+  if (xLen !== yLen || xLen < 2) {
+    return {
+      slope: NaN,
+      intercept: NaN,
+      r_squared: NaN,
+      residuals: new Float64Array(),
+    };
+  }
+
+  const xPtr = wasmModule.alloc_f64(xLen);
+  const yPtr = wasmModule.alloc_f64(yLen);
+  const xView = f64View(xPtr, xLen);
+  const yView = f64View(yPtr, yLen);
+  copyToWasmMemory(x, xView);
+  copyToWasmMemory(y, yView);
+
+  const result = wasmModule.regress_naive_f64(xPtr, xLen, yPtr, yLen);
+  
+  wasmModule.free_f64(xPtr, xLen);
+  wasmModule.free_f64(yPtr, yLen);
+
+  // Extract residuals
+  const residualsView = f64View(result.residuals.ptr, result.residuals.len);
+  const residuals = new Float64Array(result.residuals.len);
+  residuals.set(residualsView);
+  wasmModule.free_f64(result.residuals.ptr, result.residuals.len);
+
+  return {
+    slope: result.slope,
+    intercept: result.intercept,
+    r_squared: result.r_squared,
+    residuals,
+  };
+}
+
+/**
+ * SIMD-optimized linear regression (fused sums, single-pass for statistics).
+ *
+ * @param x - Independent variable values
+ * @param y - Dependent variable values
+ * @returns Regression result with slope, intercept, R², and residuals
+ */
+export function regressSimd(
+  x: ArrayLike<number>,
+  y: ArrayLike<number>
+): RegressionResult {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const xLen = x.length;
+  const yLen = y.length;
+
+  if (xLen !== yLen || xLen < 2) {
+    return {
+      slope: NaN,
+      intercept: NaN,
+      r_squared: NaN,
+      residuals: new Float64Array(),
+    };
+  }
+
+  const xPtr = wasmModule.alloc_f64(xLen);
+  const yPtr = wasmModule.alloc_f64(yLen);
+  const xView = f64View(xPtr, xLen);
+  const yView = f64View(yPtr, yLen);
+  copyToWasmMemory(x, xView);
+  copyToWasmMemory(y, yView);
+
+  const result = wasmModule.regress_simd_f64(xPtr, xLen, yPtr, yLen);
+  
+  wasmModule.free_f64(xPtr, xLen);
+  wasmModule.free_f64(yPtr, yLen);
+
+  // Extract residuals
+  const residualsView = f64View(result.residuals.ptr, result.residuals.len);
+  const residuals = new Float64Array(result.residuals.len);
+  residuals.set(residualsView);
+  wasmModule.free_f64(result.residuals.ptr, result.residuals.len);
+
+  return {
+    slope: result.slope,
+    intercept: result.intercept,
+    r_squared: result.r_squared,
+    residuals,
+  };
+}
+
+/**
+ * BLAS-like kernels-based linear regression.
+ * Uses minimal kernel operations (dot product, sum, axpy-style residuals).
+ *
+ * @param x - Independent variable values
+ * @param y - Dependent variable values
+ * @returns Regression result with slope, intercept, R², and residuals
+ */
+export function regressWasmKernels(
+  x: ArrayLike<number>,
+  y: ArrayLike<number>
+): RegressionResult {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const xLen = x.length;
+  const yLen = y.length;
+
+  if (xLen !== yLen || xLen < 2) {
+    return {
+      slope: NaN,
+      intercept: NaN,
+      r_squared: NaN,
+      residuals: new Float64Array(),
+    };
+  }
+
+  const xPtr = wasmModule.alloc_f64(xLen);
+  const yPtr = wasmModule.alloc_f64(yLen);
+  const xView = f64View(xPtr, xLen);
+  const yView = f64View(yPtr, yLen);
+  copyToWasmMemory(x, xView);
+  copyToWasmMemory(y, yView);
+
+  const result = wasmModule.regress_wasm_kernels_f64(xPtr, xLen, yPtr, yLen);
+  
+  wasmModule.free_f64(xPtr, xLen);
+  wasmModule.free_f64(yPtr, yLen);
+
+  // Extract residuals
+  const residualsView = f64View(result.residuals.ptr, result.residuals.len);
+  const residuals = new Float64Array(result.residuals.len);
+  residuals.set(residualsView);
+  wasmModule.free_f64(result.residuals.ptr, result.residuals.len);
+
+  return {
+    slope: result.slope,
+    intercept: result.intercept,
+    r_squared: result.r_squared,
+    residuals,
+  };
+}
+
+function regressCoeffsImpl(
+  x: ArrayLike<number>,
+  y: ArrayLike<number>,
+  wasmFn: (xPtr: number, xLen: number, yPtr: number, yLen: number) => RegressionCoeffs
+): RegressionCoeffs {
+  const wasm = requireWasm();
+  const xLen = x.length;
+  const yLen = y.length;
+
+  if (xLen !== yLen || xLen < 2) {
+    return { slope: NaN, intercept: NaN, r_squared: NaN };
+  }
+
+  const xPtr = wasm.alloc_f64(xLen);
+  const yPtr = wasm.alloc_f64(yLen);
+  const xView = f64View(xPtr, xLen);
+  const yView = f64View(yPtr, yLen);
+  copyToWasmMemory(x, xView);
+  copyToWasmMemory(y, yView);
+
+  const coeffs = wasmFn(xPtr, xLen, yPtr, yLen);
+
+  wasm.free_f64(xPtr, xLen);
+  wasm.free_f64(yPtr, yLen);
+
+  return coeffs;
+}
+
+/**
+ * Coefficients-only regression (no residual allocation/copy).
+ * Best for performance-sensitive workloads and benchmarking.
+ */
+export function regressCoeffs(x: ArrayLike<number>, y: ArrayLike<number>): RegressionCoeffs {
+  return regressCoeffsImpl(x, y, requireWasm().regress_coeffs_f64);
+}
+
+export function regressNaiveCoeffs(x: ArrayLike<number>, y: ArrayLike<number>): RegressionCoeffs {
+  return regressCoeffsImpl(x, y, requireWasm().regress_naive_coeffs_f64);
+}
+
+export function regressSimdCoeffs(x: ArrayLike<number>, y: ArrayLike<number>): RegressionCoeffs {
+  return regressCoeffsImpl(x, y, requireWasm().regress_simd_coeffs_f64);
+}
+
+export function regressWasmKernelsCoeffs(
+  x: ArrayLike<number>,
+  y: ArrayLike<number>
+): RegressionCoeffs {
+  return regressCoeffsImpl(x, y, requireWasm().regress_wasm_kernels_coeffs_f64);
+}
+
+/**
+ * f32 coefficients-only regression.
+ *
+ * This is primarily aimed at wasm32 SIMD (f32x4) performance.
+ * For best performance, pass `Float32Array` inputs.
+ */
+export function regressSimdCoeffsF32(x: ArrayLike<number>, y: ArrayLike<number>): RegressionCoeffsF32 {
+  const wasm = requireWasm();
+  const len = x.length;
+  if (len !== y.length || len < 2) {
+    return { slope: NaN, intercept: NaN, r_squared: NaN };
+  }
+
+  const xPtr = wasm.alloc_f32(len);
+  const yPtr = wasm.alloc_f32(len);
+  const xView = f32View(xPtr, len);
+  const yView = f32View(yPtr, len);
+  copyToWasmMemoryF32(x, xView);
+  copyToWasmMemoryF32(y, yView);
+
+  const coeffs = wasm.regress_simd_coeffs_f32(xPtr, len, yPtr, len);
+
+  wasm.free_f32(xPtr, len);
+  wasm.free_f32(yPtr, len);
+
+  return coeffs;
+}
+
+/**
+ * A reusable WASM-side regression workspace for f32.
+ * Avoids per-call alloc/copy and enables f32x4 SIMD on wasm32.
+ */
+export class RegressionWorkspaceF32 {
+  private wasm: WasmModule;
+  private xPtr: number;
+  private yPtr: number;
+  private len: number;
+  private residualsPtr: number | null;
+
+  private constructor(wasm: WasmModule, xPtr: number, yPtr: number, len: number, residualsPtr: number | null) {
+    this.wasm = wasm;
+    this.xPtr = xPtr;
+    this.yPtr = yPtr;
+    this.len = len;
+    this.residualsPtr = residualsPtr;
+  }
+
+  static fromXY(x: ArrayLike<number>, y: ArrayLike<number>, withResiduals = false): RegressionWorkspaceF32 {
+    const wasm = requireWasm();
+    const len = x.length;
+    if (len !== y.length || len < 2) {
+      throw new Error('RegressionWorkspaceF32 requires x/y of same length and length >= 2.');
+    }
+
+    const xPtr = wasm.alloc_f32(len);
+    const yPtr = wasm.alloc_f32(len);
+    const xView = f32View(xPtr, len);
+    const yView = f32View(yPtr, len);
+    copyToWasmMemoryF32(x, xView);
+    copyToWasmMemoryF32(y, yView);
+
+    const residualsPtr = withResiduals ? wasm.alloc_f32(len) : null;
+    return new RegressionWorkspaceF32(wasm, xPtr, yPtr, len, residualsPtr);
+  }
+
+  coeffsSimd(): RegressionCoeffsF32 {
+    return this.wasm.regress_simd_coeffs_f32(this.xPtr, this.len, this.yPtr, this.len);
+  }
+
+  residualsInPlaceSimd(): RegressionCoeffsF32 {
+    if (this.residualsPtr == null) {
+      throw new Error('RegressionWorkspaceF32 was created without residual buffer.');
+    }
+    return this.wasm.regress_simd_residuals_inplace_f32(this.xPtr, this.len, this.yPtr, this.len, this.residualsPtr);
+  }
+
+  readResiduals(): Float32Array {
+    if (this.residualsPtr == null) {
+      return new Float32Array();
+    }
+    const view = f32View(this.residualsPtr, this.len);
+    const out = new Float32Array(this.len);
+    out.set(view);
+    return out;
+  }
+
+  free(): void {
+    this.wasm.free_f32(this.xPtr, this.len);
+    this.wasm.free_f32(this.yPtr, this.len);
+    if (this.residualsPtr != null) {
+      this.wasm.free_f32(this.residualsPtr, this.len);
+      this.residualsPtr = null;
+    }
+    this.xPtr = 0;
+    this.yPtr = 0;
+    this.len = 0;
+  }
+}
+
+/**
+ * A reusable WASM-side regression workspace.
+ *
+ * This is the fastest way to benchmark/execute regression repeatedly because it:
+ * - allocates/copies x/y once into WASM memory
+ * - optionally allocates an output residual buffer once
+ * - avoids per-iteration alloc/free and JS↔WASM copies
+ */
+export class RegressionWorkspace {
+  private wasm: WasmModule;
+  private xPtr: number;
+  private yPtr: number;
+  private len: number;
+  private residualsPtr: number | null;
+
+  private constructor(wasm: WasmModule, xPtr: number, yPtr: number, len: number, residualsPtr: number | null) {
+    this.wasm = wasm;
+    this.xPtr = xPtr;
+    this.yPtr = yPtr;
+    this.len = len;
+    this.residualsPtr = residualsPtr;
+  }
+
+  static fromXY(x: ArrayLike<number>, y: ArrayLike<number>, withResiduals = false): RegressionWorkspace {
+    const wasm = requireWasm();
+    const len = x.length;
+    if (len !== y.length || len < 2) {
+      throw new Error('RegressionWorkspace requires x/y of same length and length >= 2.');
+    }
+
+    const xPtr = wasm.alloc_f64(len);
+    const yPtr = wasm.alloc_f64(len);
+    const xView = f64View(xPtr, len);
+    const yView = f64View(yPtr, len);
+    copyToWasmMemory(x, xView);
+    copyToWasmMemory(y, yView);
+
+    const residualsPtr = withResiduals ? wasm.alloc_f64(len) : null;
+    return new RegressionWorkspace(wasm, xPtr, yPtr, len, residualsPtr);
+  }
+
+  coeffsNaive(): RegressionCoeffs {
+    return this.wasm.regress_naive_coeffs_f64(this.xPtr, this.len, this.yPtr, this.len);
+  }
+
+  coeffsSimd(): RegressionCoeffs {
+    return this.wasm.regress_simd_coeffs_f64(this.xPtr, this.len, this.yPtr, this.len);
+  }
+
+  coeffsKernels(): RegressionCoeffs {
+    return this.wasm.regress_wasm_kernels_coeffs_f64(this.xPtr, this.len, this.yPtr, this.len);
+  }
+
+  /**
+   * Compute residuals into a preallocated WASM buffer (no JS copy).
+   * You must create the workspace with `withResiduals=true`.
+   */
+  residualsInPlaceNaive(): RegressionCoeffs {
+    if (this.residualsPtr == null) {
+      throw new Error('RegressionWorkspace was created without residual buffer.');
+    }
+    return this.wasm.regress_naive_residuals_inplace_f64(this.xPtr, this.len, this.yPtr, this.len, this.residualsPtr);
+  }
+
+  residualsInPlaceSimd(): RegressionCoeffs {
+    if (this.residualsPtr == null) {
+      throw new Error('RegressionWorkspace was created without residual buffer.');
+    }
+    return this.wasm.regress_simd_residuals_inplace_f64(this.xPtr, this.len, this.yPtr, this.len, this.residualsPtr);
+  }
+
+  residualsInPlaceKernels(): RegressionCoeffs {
+    if (this.residualsPtr == null) {
+      throw new Error('RegressionWorkspace was created without residual buffer.');
+    }
+    return this.wasm.regress_wasm_kernels_residuals_inplace_f64(
+      this.xPtr,
+      this.len,
+      this.yPtr,
+      this.len,
+      this.residualsPtr
+    );
+  }
+
+  /**
+   * Copy residuals out of WASM memory (optional; expensive).
+   */
+  readResiduals(): Float64Array {
+    if (this.residualsPtr == null) {
+      return new Float64Array();
+    }
+    const view = f64View(this.residualsPtr, this.len);
+    const out = new Float64Array(this.len);
+    out.set(view);
+    return out;
+  }
+
+  free(): void {
+    this.wasm.free_f64(this.xPtr, this.len);
+    this.wasm.free_f64(this.yPtr, this.len);
+    if (this.residualsPtr != null) {
+      this.wasm.free_f64(this.residualsPtr, this.len);
+      this.residualsPtr = null;
+    }
+    // poison pointers
+    this.xPtr = 0;
+    this.yPtr = 0;
+    this.len = 0;
+  }
 }
 
 /**
