@@ -106,6 +106,29 @@ export async function loadWasmModule(modulePath: string): Promise<any> {
   }
   // @ts-ignore - WASM module path resolved at runtime
   const mod = await import(modulePath);
+  // wasm-pack `--target web` (and some other targets) generate a default async
+  // initializer that must be called before exports are usable. Without this,
+  // the generated JS will keep an internal `wasm` reference as `undefined`,
+  // leading to runtime crashes like "Cannot read properties of undefined".
+  if (typeof (mod as any).default === 'function') {
+    const init = (mod as any).default as (input?: any) => Promise<any>;
+
+    // In browsers, the default init uses `fetch(new URL(..., import.meta.url))`.
+    // In Node, `fetch(file://...)` is not reliably supported, so we pass the
+    // raw wasm bytes instead.
+    const isNode =
+      typeof process !== 'undefined' &&
+      typeof (process as any).versions?.node === 'string';
+
+    if (isNode) {
+      const { readFile } = await import('node:fs/promises');
+      const wasmUrl = new URL(modulePath.replace(/\.js$/i, '_bg.wasm'), import.meta.url);
+      const wasmBytes = await readFile(wasmUrl);
+      await init({ module_or_path: wasmBytes });
+    } else {
+      await init();
+    }
+  }
   return mod;
 }
 

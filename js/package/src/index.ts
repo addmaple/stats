@@ -1,5 +1,5 @@
-import { simd } from 'wasm-feature-detect';
 import * as quantilesModule from './quantiles.js';
+import { loadWasmModule } from './shared.js';
 
 interface ArrayResult {
   ptr: number;
@@ -585,14 +585,9 @@ export async function init(): Promise<void> {
     return;
   }
 
-  const supportsSimd = await simd();
-  
-  // For now, use the same build for both SIMD and non-SIMD
-  // TODO: Load SIMD build when available
-  // @ts-ignore - WASM module path resolved at runtime
-  // Path is relative to dist/index.js location
-  const mod = await import('../pkg/stat-wasm/stat_wasm.js');
-  wasmModule = mod as unknown as WasmModule;
+  // Root module uses the "full" WASM build. Use the shared loader so Node and
+  // browsers both initialize correctly (and so SIMD support is checked once).
+  wasmModule = (await loadWasmModule('../pkg/stat-wasm/stat_wasm.js')) as unknown as WasmModule;
 
   // Root-level API includes weighted quantiles; those live in the quantiles WASM module.
   // Keep `await init()` working for `weightedQuantiles/weightedMedian/weightedPercentile`.

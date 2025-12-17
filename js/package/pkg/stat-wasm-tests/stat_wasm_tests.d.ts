@@ -5,8 +5,8 @@ export class ArrayResult {
   private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  readonly ptr: number;
   readonly len: number;
+  readonly ptr: number;
   readonly is_empty: boolean;
 }
 
@@ -24,9 +24,9 @@ export class TestResult {
   private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  readonly statistic: number;
-  readonly p_value: number;
   readonly df: number | undefined;
+  readonly p_value: number;
+  readonly statistic: number;
 }
 
 export function alloc_f64(len: number): number;
@@ -50,24 +50,24 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_arrayresult_free: (a: number, b: number) => void;
-  readonly arrayresult_ptr: (a: number) => number;
-  readonly arrayresult_len: (a: number) => number;
-  readonly arrayresult_is_empty: (a: number) => number;
-  readonly get_memory: () => any;
-  readonly alloc_f64: (a: number) => number;
-  readonly free_f64: (a: number, b: number) => void;
-  readonly testresult_p_value: (a: number) => number;
-  readonly testresult_df: (a: number) => [number, number];
-  readonly ttest_f64: (a: number, b: number, c: number) => number;
-  readonly ztest_f64: (a: number, b: number, c: number, d: number) => number;
   readonly __wbg_regressionresult_free: (a: number, b: number) => void;
-  readonly regressionresult_slope: (a: number) => number;
+  readonly alloc_f64: (a: number) => number;
+  readonly arrayresult_is_empty: (a: number) => number;
+  readonly arrayresult_len: (a: number) => number;
+  readonly arrayresult_ptr: (a: number) => number;
+  readonly free_f64: (a: number, b: number) => void;
+  readonly get_memory: () => any;
+  readonly normalci_f64: (a: number, b: number, c: number) => [number, number];
+  readonly regress_f64: (a: number, b: number, c: number, d: number) => number;
   readonly regressionresult_intercept: (a: number) => number;
   readonly regressionresult_r_squared: (a: number) => number;
   readonly regressionresult_residuals: (a: number) => number;
-  readonly regress_f64: (a: number, b: number, c: number, d: number) => number;
-  readonly normalci_f64: (a: number, b: number, c: number) => [number, number];
+  readonly regressionresult_slope: (a: number) => number;
   readonly tci_f64: (a: number, b: number, c: number, d: number) => [number, number];
+  readonly testresult_df: (a: number) => [number, number];
+  readonly testresult_p_value: (a: number) => number;
+  readonly ttest_f64: (a: number, b: number, c: number) => number;
+  readonly ztest_f64: (a: number, b: number, c: number, d: number) => number;
   readonly testresult_statistic: (a: number) => number;
   readonly __wbg_testresult_free: (a: number, b: number) => void;
   readonly __wbindgen_externrefs: WebAssembly.Table;
