@@ -55,3 +55,21 @@ fn test_spearmancoeff() {
     let y_rev = [10.0, 8.0, 6.0, 4.0, 2.0];
     assert_relative_eq!(spearmancoeff(&x, &y_rev), -1.0, epsilon = 1e-10);
 }
+
+#[test]
+fn test_spearmancoeff_rejects_nan() {
+    let x = [1.0, 2.0, f64::NAN, 4.0];
+    let y = [1.0, 2.0, 3.0, 4.0];
+    assert!(spearmancoeff(&x, &y).is_nan());
+    assert!(spearmancoeff(&y, &x).is_nan());
+}
+
+#[test]
+fn test_corrcoeff_non_finite_inputs_return_nan() {
+    let x = [1.0, 2.0, f64::INFINITY, 4.0];
+    let y = [1.0, 2.0, 3.0, 4.0];
+    assert!(corrcoeff(&x, &y).is_nan());
+
+    let x2 = [1.0, 2.0, f64::NEG_INFINITY, 4.0];
+    assert!(corrcoeff(&x2, &y).is_nan());
+}

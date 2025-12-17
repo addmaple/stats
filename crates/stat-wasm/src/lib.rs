@@ -691,6 +691,188 @@ pub fn anova_categorical(groups: Vec<String>, values: Vec<f64>) -> AnovaResult {
     }
 }
 
+// =============================================================================
+// Tukey HSD (Honestly Significant Difference) Test
+// =============================================================================
+
+/// Result of a single pairwise comparison in Tukey HSD test
+#[wasm_bindgen]
+pub struct TukeyPairResult {
+    group1: usize,
+    group2: usize,
+    mean_diff: f64,
+    q_statistic: f64,
+    p_value: f64,
+    ci_lower: f64,
+    ci_upper: f64,
+}
+
+#[wasm_bindgen]
+impl TukeyPairResult {
+    #[wasm_bindgen(getter)]
+    pub fn group1(&self) -> usize {
+        self.group1
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn group2(&self) -> usize {
+        self.group2
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn mean_diff(&self) -> f64 {
+        self.mean_diff
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn q_statistic(&self) -> f64 {
+        self.q_statistic
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn p_value(&self) -> f64 {
+        self.p_value
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn ci_lower(&self) -> f64 {
+        self.ci_lower
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn ci_upper(&self) -> f64 {
+        self.ci_upper
+    }
+}
+
+/// Complete result of Tukey HSD test
+#[wasm_bindgen]
+pub struct TukeyHsdResult {
+    comparisons: Vec<TukeyPairResult>,
+    num_groups: usize,
+    df_within: usize,
+    msw: f64,
+}
+
+#[wasm_bindgen]
+impl TukeyHsdResult {
+    #[wasm_bindgen(getter)]
+    pub fn num_groups(&self) -> usize {
+        self.num_groups
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn df_within(&self) -> usize {
+        self.df_within
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn msw(&self) -> f64 {
+        self.msw
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn num_comparisons(&self) -> usize {
+        self.comparisons.len()
+    }
+
+    /// Get a specific comparison by index
+    pub fn get_comparison(&self, index: usize) -> Option<TukeyPairResult> {
+        self.comparisons.get(index).map(|c| TukeyPairResult {
+            group1: c.group1,
+            group2: c.group2,
+            mean_diff: c.mean_diff,
+            q_statistic: c.q_statistic,
+            p_value: c.p_value,
+            ci_lower: c.ci_lower,
+            ci_upper: c.ci_upper,
+        })
+    }
+}
+
+/// Tukey HSD test using flat buffer approach (same as ANOVA)
+/// data_ptr: pointer to concatenated group data
+/// lens_ptr: pointer to array of group lengths (as f64)
+/// num_groups: number of groups
+#[wasm_bindgen]
+pub fn tukey_hsd_flat(data_ptr: *const f64, lens_ptr: *const f64, num_groups: usize) -> TukeyHsdResult {
+    if num_groups < 2 {
+        return TukeyHsdResult {
+            comparisons: vec![],
+            num_groups,
+            df_within: 0,
+            msw: f64::NAN,
+        };
+    }
+
+    let lens = unsafe { std::slice::from_raw_parts(lens_ptr, num_groups) };
+    let total_len: usize = lens.iter().map(|&l| l as usize).sum();
+    let data = unsafe { std::slice::from_raw_parts(data_ptr, total_len) };
+
+    // Split data into groups based on lengths
+    let mut groups: Vec<&[f64]> = Vec::with_capacity(num_groups);
+    let mut offset = 0;
+    for &len in lens {
+        let len = len as usize;
+        if len == 0 {
+            return TukeyHsdResult {
+                comparisons: vec![],
+                num_groups,
+                df_within: 0,
+                msw: f64::NAN,
+            };
+        }
+        groups.push(&data[offset..offset + len]);
+        offset += len;
+    }
+
+    let result = stat_core::tukey_hsd(&groups);
+
+    TukeyHsdResult {
+        comparisons: result
+            .comparisons
+            .into_iter()
+            .map(|c| TukeyPairResult {
+                group1: c.group1,
+                group2: c.group2,
+                mean_diff: c.mean_diff,
+                q_statistic: c.q_statistic,
+                p_value: c.p_value,
+                ci_lower: c.ci_lower,
+                ci_upper: c.ci_upper,
+            })
+            .collect(),
+        num_groups: result.num_groups,
+        df_within: result.df_within,
+        msw: result.msw,
+    }
+}
+
+/// Tukey HSD test with categorical grouping
+#[wasm_bindgen]
+pub fn tukey_hsd_categorical(groups: Vec<String>, values: Vec<f64>) -> TukeyHsdResult {
+    let result = stat_core::tukey_hsd_categorical(&groups, &values);
+
+    TukeyHsdResult {
+        comparisons: result
+            .comparisons
+            .into_iter()
+            .map(|c| TukeyPairResult {
+                group1: c.group1,
+                group2: c.group2,
+                mean_diff: c.mean_diff,
+                q_statistic: c.q_statistic,
+                p_value: c.p_value,
+                ci_lower: c.ci_lower,
+                ci_upper: c.ci_upper,
+            })
+            .collect(),
+        num_groups: result.num_groups,
+        df_within: result.df_within,
+        msw: result.msw,
+    }
+}
+
 // Optimized functions that work directly with typed arrays (no copying needed)
 // These assume the data is already in WASM memory
 #[wasm_bindgen]

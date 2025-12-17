@@ -9,13 +9,11 @@
   "files": [
     "stat_wasm_bg.wasm",
     "stat_wasm.js",
-    "stat_wasm_bg.js",
     "stat_wasm.d.ts"
   ],
   "main": "stat_wasm.js",
   "types": "stat_wasm.d.ts",
   "sideEffects": [
-    "./stat_wasm.js",
     "./snippets/*"
   ]
 }

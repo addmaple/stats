@@ -459,6 +459,326 @@ pub fn anova_f_score_categorical(groups: &[String], values: &[f64]) -> f64 {
     anova_f_score(&group_refs)
 }
 
+// =============================================================================
+// Tukey HSD (Honestly Significant Difference) Test
+// =============================================================================
+
+/// Result of a single pairwise comparison in Tukey HSD test.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TukeyPairResult {
+    /// Index of first group
+    pub group1: usize,
+    /// Index of second group
+    pub group2: usize,
+    /// Difference in means (group1 - group2)
+    pub mean_diff: f64,
+    /// Studentized range statistic (q)
+    pub q_statistic: f64,
+    /// P-value for the comparison
+    pub p_value: f64,
+    /// 95% confidence interval lower bound
+    pub ci_lower: f64,
+    /// 95% confidence interval upper bound
+    pub ci_upper: f64,
+}
+
+/// Complete result of a Tukey HSD test.
+#[derive(Debug, Clone)]
+pub struct TukeyHsdResult {
+    /// All pairwise comparisons
+    pub comparisons: Vec<TukeyPairResult>,
+    /// Number of groups
+    pub num_groups: usize,
+    /// Degrees of freedom within groups
+    pub df_within: usize,
+    /// Mean square within (MSW)
+    pub msw: f64,
+}
+
+/// Tukey HSD (Honestly Significant Difference) post-hoc test.
+///
+/// Performs pairwise comparisons between all group means after ANOVA.
+/// This test controls the family-wise error rate when making multiple comparisons.
+///
+/// # Arguments
+/// * `groups` - Slice of slices, each containing the data for one group
+///
+/// # Returns
+/// A `TukeyHsdResult` containing all pairwise comparisons with q-statistics and p-values.
+///
+/// # Example
+/// ```
+/// use stat_core::tukey_hsd;
+///
+/// let group_a = [5.0, 6.0, 7.0, 8.0, 9.0];
+/// let group_b = [10.0, 11.0, 12.0, 13.0, 14.0];
+/// let group_c = [15.0, 16.0, 17.0, 18.0, 19.0];
+///
+/// let result = tukey_hsd(&[&group_a, &group_b, &group_c]);
+/// for comparison in &result.comparisons {
+///     println!("Groups {} vs {}: mean_diff={:.2}, p={:.4}",
+///         comparison.group1, comparison.group2,
+///         comparison.mean_diff, comparison.p_value);
+/// }
+/// ```
+pub fn tukey_hsd(groups: &[&[f64]]) -> TukeyHsdResult {
+    let k = groups.len();
+
+    if k < 2 {
+        return TukeyHsdResult {
+            comparisons: vec![],
+            num_groups: k,
+            df_within: 0,
+            msw: f64::NAN,
+        };
+    }
+
+    // Calculate group statistics
+    let mut group_means = Vec::with_capacity(k);
+    let mut group_sizes = Vec::with_capacity(k);
+    let mut total_n = 0usize;
+    let mut ssw = 0.0; // Sum of squares within
+
+    for group in groups {
+        let n = group.len();
+        if n == 0 {
+            return TukeyHsdResult {
+                comparisons: vec![],
+                num_groups: k,
+                df_within: 0,
+                msw: f64::NAN,
+            };
+        }
+
+        total_n += n;
+        let group_mean = sum(group) / (n as f64);
+        group_means.push(group_mean);
+        group_sizes.push(n);
+
+        // Calculate within-group sum of squares
+        ssw += sum_squared_deviations(group, group_mean);
+    }
+
+    let df_within = total_n - k;
+    if df_within == 0 {
+        return TukeyHsdResult {
+            comparisons: vec![],
+            num_groups: k,
+            df_within: 0,
+            msw: f64::NAN,
+        };
+    }
+
+    let msw = ssw / (df_within as f64);
+    let root_msw = msw.sqrt();
+
+    // Generate all pairwise comparisons
+    let mut comparisons = Vec::with_capacity(k * (k - 1) / 2);
+
+    for i in 0..k {
+        for j in (i + 1)..k {
+            let mean_diff = group_means[i] - group_means[j];
+            let n_i = group_sizes[i] as f64;
+            let n_j = group_sizes[j] as f64;
+
+            // Standard error for Tukey HSD (uses harmonic mean for unequal n)
+            let se = root_msw * (0.5 * (1.0 / n_i + 1.0 / n_j)).sqrt();
+
+            // Studentized range statistic + p-value.
+            // Degenerate case: if within-group variance is 0, then se==0.
+            // - If mean_diff==0, the groups are identical -> q=0, p=1
+            // - Otherwise -> q=+inf, p=0
+            let (q, p_value) = if se == 0.0 {
+                if mean_diff == 0.0 {
+                    (0.0, 1.0)
+                } else {
+                    (f64::INFINITY, 0.0)
+                }
+            } else {
+                let q = mean_diff.abs() / se;
+                let p_value = studentized_range_p_value(q, k, df_within);
+                (q, p_value)
+            };
+
+            // 95% confidence interval
+            // Critical q value for alpha=0.05 (approximated)
+            let q_crit = studentized_range_critical(0.05, k, df_within);
+            let margin = q_crit * se;
+            let ci_lower = mean_diff - margin;
+            let ci_upper = mean_diff + margin;
+
+            comparisons.push(TukeyPairResult {
+                group1: i,
+                group2: j,
+                mean_diff,
+                q_statistic: q,
+                p_value,
+                ci_lower,
+                ci_upper,
+            });
+        }
+    }
+
+    TukeyHsdResult {
+        comparisons,
+        num_groups: k,
+        df_within,
+        msw,
+    }
+}
+
+/// Tukey HSD with categorical grouping.
+///
+/// Alternative interface that accepts categorical group labels and corresponding values.
+///
+/// # Arguments
+/// * `labels` - Array of group labels (one per observation)
+/// * `values` - Array of numeric values (one per observation)
+///
+/// # Returns
+/// A `TukeyHsdResult` containing all pairwise comparisons.
+/// Group indices in results correspond to the order groups were first encountered.
+pub fn tukey_hsd_categorical(labels: &[String], values: &[f64]) -> TukeyHsdResult {
+    if labels.len() != values.len() || labels.is_empty() {
+        return TukeyHsdResult {
+            comparisons: vec![],
+            num_groups: 0,
+            df_within: 0,
+            msw: f64::NAN,
+        };
+    }
+
+    // Group values by category
+    let mut grouped_values: HashMap<String, Vec<f64>> = HashMap::new();
+    for (label, &value) in labels.iter().zip(values.iter()) {
+        grouped_values.entry(label.clone()).or_default().push(value);
+    }
+
+    let num_groups = grouped_values.len();
+    if num_groups < 2 {
+        return TukeyHsdResult {
+            comparisons: vec![],
+            num_groups,
+            df_within: 0,
+            msw: f64::NAN,
+        };
+    }
+
+    // Convert to format expected by tukey_hsd
+    let group_vecs: Vec<Vec<f64>> = grouped_values.into_values().collect();
+    let group_refs: Vec<&[f64]> = group_vecs.iter().map(|v| v.as_slice()).collect();
+
+    tukey_hsd(&group_refs)
+}
+
+/// Approximate p-value from studentized range distribution.
+///
+/// Uses a combination of methods for accuracy across different parameter ranges:
+/// - For large df, uses normal approximation
+/// - For smaller df, uses relationship with t-distribution and Sidak correction
+fn studentized_range_p_value(q: f64, k: usize, df: usize) -> f64 {
+    if q.is_nan() {
+        return f64::NAN;
+    }
+    if q <= 0.0 {
+        return 1.0;
+    }
+    if q.is_infinite() {
+        return 0.0;
+    }
+
+    let k_f = k as f64;
+    let df_f = df as f64;
+
+    // For large degrees of freedom, use asymptotic normal approximation
+    // The studentized range approaches a scaled maximum of k standard normals
+    if df > 120 {
+        // Use the relationship: q ≈ t * sqrt(2) for two groups
+        // For k groups, we use a Bonferroni-like adjustment
+        let num_comparisons = k_f * (k_f - 1.0) / 2.0;
+
+        // Convert q to equivalent z-score and apply Sidak correction
+        let t = q / 2.0_f64.sqrt();
+        let single_p = 2.0 * (1.0 - normal_cdf_approx(t));
+
+        // Sidak correction: 1 - (1 - alpha)^m
+        let family_p = 1.0 - (1.0 - single_p).powf(num_comparisons);
+        return family_p.clamp(0.0, 1.0);
+    }
+
+    // For smaller df, use the relationship with Student's t
+    // q ≈ sqrt(2) * t, and adjust for multiple comparisons
+    let num_comparisons = k_f * (k_f - 1.0) / 2.0;
+
+    // Convert q to t-statistic
+    let t = q / 2.0_f64.sqrt();
+
+    // Get single comparison p-value from t-distribution
+    let single_p = match crate::distributions::student_t_cdf(t, 0.0, 1.0, df_f) {
+        Ok(cdf) => 2.0 * (1.0 - cdf),
+        Err(_) => 2.0 * (1.0 - normal_cdf_approx(t)),
+    };
+
+    // Apply Sidak correction for family-wise error rate
+    let family_p = 1.0 - (1.0 - single_p).powf(num_comparisons);
+    family_p.clamp(0.0, 1.0)
+}
+
+/// Approximate critical value from studentized range distribution.
+///
+/// Uses interpolation and approximation for the critical q value.
+fn studentized_range_critical(alpha: f64, k: usize, df: usize) -> f64 {
+    if alpha <= 0.0 || alpha >= 1.0 {
+        return f64::NAN;
+    }
+
+    let k_f = k as f64;
+    let df_f = df as f64;
+
+    // For large df, use asymptotic approximation
+    // Based on Studentized Range Table approximations
+    if df > 120 {
+        // Asymptotic critical values for alpha=0.05
+        // q_crit ≈ sqrt(2) * z_crit * adjustment_factor
+        let z_crit = match crate::distributions::normal_inv(1.0 - alpha / 2.0, 0.0, 1.0) {
+            Ok(z) => z,
+            Err(_) => 1.96, // Fallback for alpha=0.05
+        };
+
+        // Adjustment for number of groups (empirical formula)
+        let group_factor = 1.0 + 0.1 * (k_f - 2.0).max(0.0);
+        return 2.0_f64.sqrt() * z_crit * group_factor;
+    }
+
+    // For finite df, use t-distribution with adjustment
+    let t_crit = match crate::distributions::student_t_inv(1.0 - alpha / (2.0 * k_f), 0.0, 1.0, df_f)
+    {
+        Ok(t) => t,
+        Err(_) => 2.0, // Fallback
+    };
+
+    // Convert t to q with adjustment for multiple comparisons
+    let group_factor = 1.0 + 0.05 * (k_f - 2.0).max(0.0);
+    2.0_f64.sqrt() * t_crit * group_factor
+}
+
+/// Simple normal CDF approximation for internal use.
+fn normal_cdf_approx(x: f64) -> f64 {
+    // Abramowitz & Stegun approximation
+    let a1 = 0.254829592;
+    let a2 = -0.284496736;
+    let a3 = 1.421413741;
+    let a4 = -1.453152027;
+    let a5 = 1.061405429;
+    let p = 0.3275911;
+
+    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let x_abs = x.abs() / 2.0_f64.sqrt();
+    let t = 1.0 / (1.0 + p * x_abs);
+    let y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x_abs * x_abs).exp();
+    0.5 * (1.0 + sign * y)
+}
+
 /// ANOVA with categorical grouping - full result
 ///
 /// Performs ANOVA test where numeric values are grouped by categorical labels.
@@ -489,3 +809,4 @@ pub fn anova_categorical(groups: &[String], values: &[f64]) -> AnovaResult {
         df_within: total_n.saturating_sub(k),
     }
 }
+

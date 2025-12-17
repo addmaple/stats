@@ -38,3 +38,6 @@ fn test_cumreduce() {
     // Empty data
     assert_eq!(cumreduce(&[], 0.0, |acc, x| acc + x), Vec::<f64>::new());
 }
+
+
+

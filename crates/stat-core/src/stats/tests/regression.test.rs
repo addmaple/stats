@@ -78,3 +78,6 @@ fn test_regress_variants_edge_cases() {
     assert!(result_simd.slope.is_nan());
     assert!(result_kernels.slope.is_nan());
 }
+
+
+

@@ -172,6 +172,14 @@ const TestResultFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_testresult_free(ptr >>> 0, 1));
 
+const TukeyHsdResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_tukeyhsdresult_free(ptr >>> 0, 1));
+
+const TukeyPairResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_tukeypairresult_free(ptr >>> 0, 1));
+
 /**
  * ANOVA result struct for JS
  */
@@ -561,6 +569,140 @@ export class TestResult {
     }
 }
 if (Symbol.dispose) TestResult.prototype[Symbol.dispose] = TestResult.prototype.free;
+
+/**
+ * Complete result of Tukey HSD test
+ */
+export class TukeyHsdResult {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(TukeyHsdResult.prototype);
+        obj.__wbg_ptr = ptr;
+        TukeyHsdResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        TukeyHsdResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_tukeyhsdresult_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get num_groups() {
+        const ret = wasm.tukeyhsdresult_num_groups(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get df_within() {
+        const ret = wasm.tukeyhsdresult_df_within(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get msw() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get num_comparisons() {
+        const ret = wasm.tukeyhsdresult_num_comparisons(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Get a specific comparison by index
+     * @param {number} index
+     * @returns {TukeyPairResult | undefined}
+     */
+    get_comparison(index) {
+        const ret = wasm.tukeyhsdresult_get_comparison(this.__wbg_ptr, index);
+        return ret === 0 ? undefined : TukeyPairResult.__wrap(ret);
+    }
+}
+if (Symbol.dispose) TukeyHsdResult.prototype[Symbol.dispose] = TukeyHsdResult.prototype.free;
+
+/**
+ * Result of a single pairwise comparison in Tukey HSD test
+ */
+export class TukeyPairResult {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(TukeyPairResult.prototype);
+        obj.__wbg_ptr = ptr;
+        TukeyPairResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        TukeyPairResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_tukeypairresult_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get group1() {
+        const ret = wasm.tukeypairresult_group1(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get group2() {
+        const ret = wasm.tukeypairresult_group2(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get mean_diff() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get q_statistic() {
+        const ret = wasm.chisquareresult_p_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get p_value() {
+        const ret = wasm.quartilesresult_q3(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get ci_lower() {
+        const ret = wasm.testresult_p_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get ci_upper() {
+        const ret = wasm.tukeypairresult_ci_upper(this.__wbg_ptr);
+        return ret;
+    }
+}
+if (Symbol.dispose) TukeyPairResult.prototype[Symbol.dispose] = TukeyPairResult.prototype.free;
 
 /**
  * @param {number} len
@@ -2547,6 +2689,36 @@ export function triangular_pdf_scalar(x, min, max, mode) {
 export function ttest_f64(data_ptr, len, mu0) {
     const ret = wasm.ttest_f64(data_ptr, len, mu0);
     return TestResult.__wrap(ret);
+}
+
+/**
+ * Tukey HSD test with categorical grouping
+ * @param {string[]} groups
+ * @param {Float64Array} values
+ * @returns {TukeyHsdResult}
+ */
+export function tukey_hsd_categorical(groups, values) {
+    const ptr0 = passArrayJsValueToWasm0(groups, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArrayF64ToWasm0(values, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.tukey_hsd_categorical(ptr0, len0, ptr1, len1);
+    return TukeyHsdResult.__wrap(ret);
+}
+
+/**
+ * Tukey HSD test using flat buffer approach (same as ANOVA)
+ * data_ptr: pointer to concatenated group data
+ * lens_ptr: pointer to array of group lengths (as f64)
+ * num_groups: number of groups
+ * @param {number} data_ptr
+ * @param {number} lens_ptr
+ * @param {number} num_groups
+ * @returns {TukeyHsdResult}
+ */
+export function tukey_hsd_flat(data_ptr, lens_ptr, num_groups) {
+    const ret = wasm.tukey_hsd_flat(data_ptr, lens_ptr, num_groups);
+    return TukeyHsdResult.__wrap(ret);
 }
 
 /**

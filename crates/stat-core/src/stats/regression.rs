@@ -1024,3 +1024,6 @@ fn dot_product(a: &[f64], b: &[f64]) -> f64 {
 pub fn regress(x: &[f64], y: &[f64]) -> RegressionResult {
     regress_simd(x, y)
 }
+
+
+

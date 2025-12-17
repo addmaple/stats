@@ -206,3 +206,6 @@ fn test_anova_categorical_edge_cases() {
     let result = anova_categorical(&single_group, &single_values);
     assert!(result.f_score.is_nan());
 }
+
+
+

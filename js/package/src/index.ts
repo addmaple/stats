@@ -228,6 +228,43 @@ interface WasmModule {
     groups: string[],
     values: number[]
   ): { f_score: number; df_between: number; df_within: number };
+  tukey_hsd_flat(
+    dataPtr: number,
+    lensPtr: number,
+    numGroups: number
+  ): {
+    num_groups: number;
+    df_within: number;
+    msw: number;
+    num_comparisons: number;
+    get_comparison(index: number): {
+      group1: number;
+      group2: number;
+      mean_diff: number;
+      q_statistic: number;
+      p_value: number;
+      ci_lower: number;
+      ci_upper: number;
+    } | undefined;
+  };
+  tukey_hsd_categorical(
+    groups: string[],
+    values: number[]
+  ): {
+    num_groups: number;
+    df_within: number;
+    msw: number;
+    num_comparisons: number;
+    get_comparison(index: number): {
+      group1: number;
+      group2: number;
+      mean_diff: number;
+      q_statistic: number;
+      p_value: number;
+      ci_lower: number;
+      ci_upper: number;
+    } | undefined;
+  };
   normal_pdf_scalar(x: number, mean: number, sd: number): number;
   normal_cdf_scalar(x: number, mean: number, sd: number): number;
   normal_inv_scalar(p: number, mean: number, sd: number): number;
@@ -2568,6 +2605,20 @@ export interface HistogramBinningResult {
 }
 
 /**
+ * Result of weighted histogram binning with edges and (weighted) counts.
+ *
+ * `counts[i]` is the sum of weights for values that fall into the i-th bin.
+ */
+export interface WeightedHistogramBinningResult {
+  /** Bin edges (length = counts.length + 1) */
+  edges: Float64Array;
+  /** Weighted counts per bin (sum of weights; length = number of bins) */
+  counts: Float64Array;
+  /** Sum of weights across all finite observations included */
+  totalWeight: number;
+}
+
+/**
  * Calculate histogram using advanced binning strategies.
  * 
  * Supports multiple binning modes:
@@ -2733,6 +2784,367 @@ export function histogramBinning(
       wasmModule.free_f64(edgesPtr, edgesLen);
     }
   }
+}
+
+// =============================================================================
+// Weighted Histogram Binning (value + weight pairs)
+// =============================================================================
+
+type WeightedBinOption = BinOption & {
+  /**
+   * Optional clamp to keep the number of bins reasonable for UI usage.
+   * If provided, auto mode will clamp computed bins to [1, maxBins].
+   */
+  maxBins?: number;
+
+  /**
+   * For custom mode, optionally clamp values outside the edge range into the
+   * first/last bin. Defaults to false (match `histogramEdges` behavior).
+   */
+  clampOutside?: boolean;
+};
+
+const isFinitePositiveWeight = (w: number) => Number.isFinite(w) && w > 0;
+
+const weightedMinMax = (xs: ArrayLike<number>, ws: ArrayLike<number>) => {
+  let minVal = Infinity;
+  let maxVal = -Infinity;
+  let totalW = 0;
+
+  const len = Math.min(xs.length, ws.length);
+  for (let i = 0; i < len; i++) {
+    const x = +xs[i];
+    const w = +ws[i];
+    if (!Number.isFinite(x) || !isFinitePositiveWeight(w)) continue;
+    totalW += w;
+    if (x < minVal) minVal = x;
+    if (x > maxVal) maxVal = x;
+  }
+
+  if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || totalW <= 0) {
+    return { min: NaN, max: NaN, totalW: 0 };
+  }
+
+  return { min: minVal, max: maxVal, totalW };
+};
+
+const weightedMeanAndStdev = (xs: ArrayLike<number>, ws: ArrayLike<number>) => {
+  const len = Math.min(xs.length, ws.length);
+  let totalW = 0;
+  let sumWX = 0;
+
+  for (let i = 0; i < len; i++) {
+    const x = +xs[i];
+    const w = +ws[i];
+    if (!Number.isFinite(x) || !isFinitePositiveWeight(w)) continue;
+    totalW += w;
+    sumWX += w * x;
+  }
+
+  if (totalW <= 0) return { mean: NaN, stdev: NaN, totalW: 0 };
+  const mean = sumWX / totalW;
+
+  let sumWVar = 0;
+  for (let i = 0; i < len; i++) {
+    const x = +xs[i];
+    const w = +ws[i];
+    if (!Number.isFinite(x) || !isFinitePositiveWeight(w)) continue;
+    const d = x - mean;
+    sumWVar += w * d * d;
+  }
+
+  return { mean, stdev: Math.sqrt(sumWVar / totalW), totalW };
+};
+
+const upperBound = (arr: ArrayLike<number>, x: number) => {
+  // First index i where arr[i] > x
+  let lo = 0;
+  let hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (arr[mid] <= x) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+};
+
+const weightedHistogramEdges = (
+  xs: ArrayLike<number>,
+  ws: ArrayLike<number>,
+  edges: ArrayLike<number>,
+  clampOutside: boolean,
+) => {
+  const eLen = edges.length;
+  if (eLen < 2) return new Float64Array(0);
+
+  // Pre-copy edges to JS array for fast indexed access + comparisons.
+  const e = Array.from(edges);
+  // Validate edges: sorted, no NaN.
+  for (let i = 0; i < eLen; i++) {
+    if (!Number.isFinite(e[i]) && e[i] !== Infinity && e[i] !== -Infinity) {
+      return new Float64Array(0);
+    }
+    if (i > 0 && e[i] < e[i - 1]) {
+      return new Float64Array(0);
+    }
+  }
+
+  const bins = new Float64Array(eLen - 1);
+  const lastBin = bins.length - 1;
+
+  const len = Math.min(xs.length, ws.length);
+  for (let i = 0; i < len; i++) {
+    const x = +xs[i];
+    const w = +ws[i];
+    if (!Number.isFinite(x) || !isFinitePositiveWeight(w)) continue;
+
+    if (x < e[0]) {
+      if (clampOutside) bins[0] += w;
+      continue;
+    }
+    if (x > e[eLen - 1]) {
+      if (clampOutside) bins[lastBin] += w;
+      continue;
+    }
+
+    if (x === e[eLen - 1]) {
+      bins[lastBin] += w;
+      continue;
+    }
+
+    // i = upperBound(e, x) - 1; guarantees edges[i] <= x < edges[i+1]
+    const idx = upperBound(e, x) - 1;
+    if (idx >= 0 && idx <= lastBin) {
+      bins[idx] += w;
+    }
+  }
+
+  return bins;
+};
+
+const toNonDecreasingEdges = (edges: Float64Array) => {
+  // Enforce monotonicity (defensive) by replacing any decrease with the previous value.
+  // This avoids invalid edges from numerical issues.
+  if (edges.length < 2) return edges;
+  const out = new Float64Array(edges.length);
+  out[0] = edges[0];
+  for (let i = 1; i < edges.length; i++) {
+    const v = edges[i];
+    out[i] = v >= out[i - 1] ? v : out[i - 1];
+  }
+  return out;
+};
+
+/**
+ * Weighted histogram binning for aggregated data.
+ *
+ * This is designed for inputs like engine’s `[value, count]` pairs:
+ * pass the numeric values as `data`, and their counts as `weights`.
+ *
+ * - For **equalFrequency**, edges are computed with `weightedQuantiles`.
+ * - For **auto (FD/Scott/sqrtN)**, bin count uses total weight as \(n\).
+ * - For **custom**, edges are used as-is; you can opt into clamping with `clampOutside`.
+ */
+export function histogramBinningWeighted(
+  data: ArrayLike<number>,
+  weights: ArrayLike<number>,
+  binSettings: number | WeightedBinOption,
+): WeightedHistogramBinningResult {
+  if (!wasmModule) {
+    throw new Error('Wasm module not initialized. Call init() first.');
+  }
+
+  const len = Math.min(data.length, weights.length);
+  if (len === 0) {
+    return {
+      edges: new Float64Array(0),
+      counts: new Float64Array(0),
+      totalWeight: 0,
+    };
+  }
+
+  // Handle legacy numeric input - route to auto mode
+  let settings: WeightedBinOption;
+  if (typeof binSettings === 'number') {
+    settings = {
+      mode: 'auto',
+      rule: 'FD',
+      bins: binSettings,
+    };
+  } else {
+    settings = binSettings;
+  }
+
+  if (!['auto', 'equalFrequency', 'fixedWidth', 'custom'].includes(settings.mode)) {
+    throw new Error(`Invalid binning mode: ${String(settings.mode)}`);
+  }
+
+  const { min, max, totalW } = weightedMinMax(data, weights);
+  if (!Number.isFinite(min) || !Number.isFinite(max) || totalW <= 0) {
+    return {
+      edges: new Float64Array(0),
+      counts: new Float64Array(0),
+      totalWeight: 0,
+    };
+  }
+
+  const range = max - min;
+  if (!(range > 0)) {
+    // All values identical (or range too small)
+    const edges = new Float64Array([min, max]);
+    const counts = new Float64Array([totalW]);
+    return { edges, counts, totalWeight: totalW };
+  }
+
+  const maxBins = Number.isFinite(settings.maxBins) && (settings.maxBins as number) > 0
+    ? Math.floor(settings.maxBins as number)
+    : null;
+
+  let edges: Float64Array;
+
+  switch (settings.mode) {
+    case 'fixedWidth': {
+      const bins = settings.bins ?? 0;
+      if (!bins || bins <= 0) {
+        throw new Error('fixedWidth mode requires bins > 0');
+      }
+      const binCount = maxBins ? Math.min(bins, maxBins) : bins;
+      edges = new Float64Array(binCount + 1);
+      for (let i = 0; i <= binCount; i++) {
+        edges[i] = min + (range * i) / binCount;
+      }
+      break;
+    }
+    case 'equalFrequency': {
+      const bins = settings.bins ?? 0;
+      if (!bins || bins <= 0) {
+        throw new Error('equalFrequency mode requires bins > 0');
+      }
+      const binCount = maxBins ? Math.min(bins, maxBins) : bins;
+      const qs = new Float64Array(binCount + 1);
+      for (let i = 0; i <= binCount; i++) {
+        qs[i] = i / binCount;
+      }
+      edges = weightedQuantiles(data, weights, qs);
+      // Ensure exact bounds
+      if (edges.length) {
+        edges[0] = min;
+        edges[edges.length - 1] = max;
+      }
+      edges = toNonDecreasingEdges(edges);
+      break;
+    }
+    case 'custom': {
+      if (!settings.edges || settings.edges.length < 2) {
+        throw new Error('custom mode requires edges array with at least 2 elements');
+      }
+      const sortedEdges = Array.from(settings.edges).sort((a, b) => a - b);
+      edges = new Float64Array(sortedEdges);
+      break;
+    }
+    case 'auto':
+    default: {
+      const rule = settings.rule || 'FD';
+      const overrideBins = settings.bins && settings.bins > 0 ? Math.floor(settings.bins) : null;
+
+      let binCount: number;
+      if (overrideBins) {
+        binCount = overrideBins;
+      } else if (rule === 'sqrtN') {
+        binCount = Math.max(1, Math.ceil(Math.sqrt(totalW)));
+      } else if (rule === 'Scott') {
+        const { stdev } = weightedMeanAndStdev(data, weights);
+        if (!Number.isFinite(stdev) || !(stdev > 0)) {
+          binCount = Math.max(1, Math.ceil(Math.sqrt(totalW)));
+        } else {
+          const width = 3.5 * stdev / Math.pow(totalW, 1 / 3);
+          binCount = (!Number.isFinite(width) || !(width > 0) || width > range)
+            ? Math.max(1, Math.ceil(Math.sqrt(totalW)))
+            : Math.max(1, Math.ceil(range / width));
+        }
+      } else {
+        // FD
+        const q = weightedQuantiles(data, weights, [0.25, 0.75]);
+        const iqrVal = q[1] - q[0];
+        if (!Number.isFinite(iqrVal) || !(iqrVal > 0)) {
+          binCount = Math.max(1, Math.ceil(Math.sqrt(totalW)));
+        } else {
+          const width = 2 * iqrVal / Math.pow(totalW, 1 / 3);
+          binCount = (!Number.isFinite(width) || !(width > 0) || width > range)
+            ? Math.max(1, Math.ceil(Math.sqrt(totalW)))
+            : Math.max(1, Math.ceil(range / width));
+        }
+      }
+
+      // Match histogram.rs safety clamp; optionally clamp further for UIs.
+      binCount = Math.min(binCount, 2048);
+      if (maxBins) binCount = Math.min(binCount, maxBins);
+
+      // Tail collapse (IQR-based) – collapse outliers into first/last bins.
+      if (settings.collapseTails?.enabled) {
+        const k = settings.collapseTails.k ?? 1.5;
+        const q = weightedQuantiles(data, weights, [0.25, 0.75]);
+        const q1 = q[0];
+        const q3 = q[1];
+        const iqrVal = q3 - q1;
+
+        if (Number.isFinite(iqrVal) && Number.isFinite(q1) && Number.isFinite(q3) && iqrVal > 0) {
+          const lower = q1 - k * iqrVal;
+          const upper = q3 + k * iqrVal;
+
+          // Filter to inner data for edge computation
+          const innerX: number[] = [];
+          const innerW: number[] = [];
+          for (let i = 0; i < len; i++) {
+            const x = +data[i];
+            const w = +weights[i];
+            if (!Number.isFinite(x) || !isFinitePositiveWeight(w)) continue;
+            if (x >= lower && x <= upper) {
+              innerX.push(x);
+              innerW.push(w);
+            }
+          }
+
+          if (innerX.length) {
+            const innerMM = weightedMinMax(innerX, innerW);
+            const innerMin = innerMM.min;
+            const innerMax = innerMM.max;
+            const innerRange = innerMax - innerMin;
+
+            // If inner range collapses, fall back to unclamped edges.
+            if (Number.isFinite(innerRange) && innerRange > 0) {
+              const innerEdges = new Float64Array(binCount + 1);
+              for (let i = 0; i <= binCount; i++) {
+                innerEdges[i] = innerMin + (innerRange * i) / binCount;
+              }
+              const fullEdges = new Float64Array(innerEdges.length + 2);
+              fullEdges[0] = -Infinity;
+              fullEdges.set(innerEdges, 1);
+              fullEdges[fullEdges.length - 1] = Infinity;
+              edges = fullEdges;
+              break;
+            }
+          }
+        }
+      }
+
+      // Default: fixed-width edges from min..max with computed binCount
+      edges = new Float64Array(binCount + 1);
+      for (let i = 0; i <= binCount; i++) {
+        edges[i] = min + (range * i) / binCount;
+      }
+      break;
+    }
+  }
+
+  const clampOutside = Boolean((settings as WeightedBinOption).clampOutside);
+  const counts = weightedHistogramEdges(data, weights, edges, clampOutside);
+
+  return {
+    edges,
+    counts,
+    totalWeight: totalW,
+  };
 }
 
 /**

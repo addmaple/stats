@@ -123,9 +123,18 @@ pub fn spearmancoeff(x: &[f64], y: &[f64]) -> f64 {
     if x.len() != y.len() || x.is_empty() {
         return f64::NAN;
     }
+    // Unlike Pearson (which typically just propagates through arithmetic),
+    // Spearman relies on rank ordering; treat NaN as invalid input.
+    if x.iter().any(|v| v.is_nan()) || y.iter().any(|v| v.is_nan()) {
+        return f64::NAN;
+    }
 
     let x_ranks = rank(x);
     let y_ranks = rank(y);
 
     corrcoeff(&x_ranks, &y_ranks)
 }
+
+
+
+

@@ -43,3 +43,6 @@ fn test_spearmancoeff() {
     let y_rev = [10.0, 8.0, 6.0, 4.0, 2.0];
     assert_relative_eq!(spearmancoeff(&x, &y_rev), -1.0, epsilon = 1e-10);
 }
+
+
+

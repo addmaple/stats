@@ -296,3 +296,6 @@ All binning strategies are implemented in Rust and optimized for performance:
 - **Custom:** O(n log k) where k is number of bins (binary search)
 
 For large datasets (millions of points), all strategies remain fast due to the Rust/WASM implementation.
+
+
+

@@ -288,3 +288,139 @@ fn test_anova_categorical_edge_cases() {
     let result = anova_categorical(&single_group, &single_values);
     assert!(result.f_score.is_nan());
 }
+
+#[test]
+fn test_ttest_len_lt_2_returns_nan() {
+    let empty: [f64; 0] = [];
+    let one = [1.0];
+
+    let r0 = ttest(&empty, 0.0);
+    assert!(r0.statistic.is_nan());
+    assert!(r0.p_value.is_nan());
+    assert_eq!(r0.df, None);
+
+    let r1 = ttest(&one, 0.0);
+    assert!(r1.statistic.is_nan());
+    assert!(r1.p_value.is_nan());
+    assert_eq!(r1.df, None);
+}
+
+#[test]
+fn test_ttest_constant_data_returns_nan_statistic() {
+    let data = [3.0, 3.0, 3.0];
+    let r = ttest(&data, 3.0);
+    assert!(r.statistic.is_nan());
+    assert!(r.p_value.is_nan());
+    assert_eq!(r.df, Some(2.0));
+}
+
+#[test]
+fn test_ztest_sigma_invalid_returns_nan() {
+    let data = [1.0, 2.0, 3.0];
+
+    for sigma in [0.0, -1.0, f64::NAN] {
+        let r = ztest(&data, 0.0, sigma);
+        assert!(r.statistic.is_nan());
+        assert!(r.p_value.is_nan());
+        assert_eq!(r.df, None);
+    }
+}
+
+#[test]
+fn test_ztest_infinite_sigma_behaves_sensibly() {
+    // With infinite sigma, the standard error is infinite, so z==0 and p==1 when mu0==mean.
+    let data = [1.0, 2.0, 3.0, 4.0];
+    let r = ztest(&data, 2.5, f64::INFINITY);
+    assert_relative_eq!(r.statistic, 0.0, epsilon = 1e-15);
+    assert_relative_eq!(r.p_value, 1.0, epsilon = 1e-15);
+}
+
+#[test]
+fn test_confidence_intervals_invalid_inputs() {
+    assert!(normalci(0.0, 0.0, 1.0)[0].is_nan());
+    assert!(normalci(1.0, 0.0, 1.0)[0].is_nan());
+    assert!(normalci(0.05, 0.0, 0.0)[0].is_nan());
+    assert!(normalci(0.05, f64::NAN, 1.0)[0].is_nan());
+
+    assert!(tci(0.0, 0.0, 1.0, 10.0)[0].is_nan());
+    assert!(tci(1.0, 0.0, 1.0, 10.0)[0].is_nan());
+    assert!(tci(0.05, 0.0, 0.0, 10.0)[0].is_nan());
+    assert!(tci(0.05, 0.0, 1.0, 1.0)[0].is_nan());
+}
+
+#[test]
+fn test_anova_constant_groups_returns_nan() {
+    let g1 = [1.0, 1.0, 1.0];
+    let g2 = [1.0, 1.0, 1.0];
+    assert!(anova_f_score(&[&g1, &g2]).is_nan());
+}
+
+#[test]
+fn test_chi_square_invariant_to_ordering() {
+    // Same paired observations, different order -> same statistic/p-value.
+    let cat1 = vec![
+        "A".to_string(),
+        "A".to_string(),
+        "B".to_string(),
+        "B".to_string(),
+        "A".to_string(),
+        "B".to_string(),
+    ];
+    let cat2 = vec![
+        "X".to_string(),
+        "Y".to_string(),
+        "X".to_string(),
+        "Y".to_string(),
+        "X".to_string(),
+        "Y".to_string(),
+    ];
+
+    let perm = [2, 0, 5, 3, 1, 4];
+    let cat1p: Vec<String> = perm.iter().map(|&i| cat1[i].clone()).collect();
+    let cat2p: Vec<String> = perm.iter().map(|&i| cat2[i].clone()).collect();
+
+    let r1 = chi_square_test(&cat1, &cat2);
+    let r2 = chi_square_test(&cat1p, &cat2p);
+
+    assert_relative_eq!(r1.statistic, r2.statistic, epsilon = 1e-12);
+    assert_relative_eq!(r1.p_value, r2.p_value, epsilon = 1e-12);
+    assert_eq!(r1.df, r2.df);
+}
+
+#[test]
+fn test_tukey_hsd_degenerate_se_zero_all_equal_means() {
+    let a = [1.0, 1.0, 1.0];
+    let b = [1.0, 1.0, 1.0];
+    let c = [1.0, 1.0, 1.0];
+
+    let r = tukey_hsd(&[&a, &b, &c]);
+    assert_eq!(r.num_groups, 3);
+    assert_eq!(r.comparisons.len(), 3);
+    assert_relative_eq!(r.msw, 0.0, epsilon = 0.0);
+
+    for cmp in &r.comparisons {
+        assert_relative_eq!(cmp.mean_diff, 0.0, epsilon = 0.0);
+        assert_relative_eq!(cmp.q_statistic, 0.0, epsilon = 0.0);
+        assert_relative_eq!(cmp.p_value, 1.0, epsilon = 0.0);
+        assert_relative_eq!(cmp.ci_lower, 0.0, epsilon = 0.0);
+        assert_relative_eq!(cmp.ci_upper, 0.0, epsilon = 0.0);
+    }
+}
+
+#[test]
+fn test_tukey_hsd_degenerate_se_zero_nonzero_mean_diff() {
+    let a = [1.0, 1.0, 1.0];
+    let b = [2.0, 2.0, 2.0];
+
+    let r = tukey_hsd(&[&a, &b]);
+    assert_eq!(r.num_groups, 2);
+    assert_eq!(r.comparisons.len(), 1);
+    assert_relative_eq!(r.msw, 0.0, epsilon = 0.0);
+
+    let cmp = &r.comparisons[0];
+    assert_relative_eq!(cmp.mean_diff, -1.0, epsilon = 0.0);
+    assert!(cmp.q_statistic.is_infinite());
+    assert_relative_eq!(cmp.p_value, 0.0, epsilon = 0.0);
+    assert_relative_eq!(cmp.ci_lower, -1.0, epsilon = 0.0);
+    assert_relative_eq!(cmp.ci_upper, -1.0, epsilon = 0.0);
+}

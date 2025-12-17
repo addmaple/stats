@@ -67,6 +67,26 @@ export interface ChiSquareResult {
   readonly df: number;
 }
 
+// Tukey HSD pair result
+export interface TukeyPairResult {
+  readonly group1: number;
+  readonly group2: number;
+  readonly mean_diff: number;
+  readonly q_statistic: number;
+  readonly p_value: number;
+  readonly ci_lower: number;
+  readonly ci_upper: number;
+}
+
+// Tukey HSD result
+export interface TukeyHsdResult {
+  readonly num_groups: number;
+  readonly df_within: number;
+  readonly msw: number;
+  readonly num_comparisons: number;
+  get_comparison(index: number): TukeyPairResult | undefined;
+}
+
 /**
  * Stats WASM module interface (stat-wasm-stats).
  * Used by the /stats subpath export.
@@ -332,6 +352,9 @@ export interface FullWasmModule extends
   chi_square_test_with_cardinality(cat1: string[], cat2: string[], cardinality1: number | null, cardinality2: number | null): ChiSquareResult;
   anova_f_score_categorical(groups: string[], values: number[]): number;
   anova_categorical(groups: string[], values: Float64Array): AnovaResult;
+  // Tukey HSD
+  tukey_hsd_flat(dataPtr: number, lensPtr: number, numGroups: number): TukeyHsdResult;
+  tukey_hsd_categorical(groups: string[], values: number[]): TukeyHsdResult;
   // Regression variants
   regress_naive_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
   regress_simd_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;

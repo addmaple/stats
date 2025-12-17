@@ -19,3 +19,6 @@ fn test_kurtosis_matches_ndarray() {
     let expected = arr.kurtosis().unwrap();
     assert_relative_eq!(kurtosis(&data) + 3.0, expected, epsilon = 1e-12);
 }
+
+
+

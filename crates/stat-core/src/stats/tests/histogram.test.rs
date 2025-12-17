@@ -43,3 +43,6 @@ fn test_histogram_edges() {
     assert_eq!(bins[0], 1); // 0.0
     assert_eq!(bins[1], 2); // 5.0, 10.0 (last edge included in last bin)
 }
+
+
+

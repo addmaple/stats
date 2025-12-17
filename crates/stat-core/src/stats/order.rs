@@ -166,8 +166,11 @@ pub fn quantiles(data: &[f64], qs: &[f64]) -> Vec<f64> {
         return vec![sorted[0]; qs.len()];
     }
 
-    const ALPHAP: f64 = 3.0 / 8.0;
-    const BETAP: f64 = 3.0 / 8.0;
+    // jStat-compatible quantiles (Hyndman & Fan type 9):
+    //   h = p * (n + 1/4) + 3/8
+    // with linear interpolation between surrounding order statistics.
+    //
+    // Note: jStat's `quantiles()` is *not* the same method as our `percentile_inclusive()`.
     let n = sorted.len() as f64;
 
     qs.iter()
@@ -176,19 +179,23 @@ pub fn quantiles(data: &[f64], qs: &[f64]) -> Vec<f64> {
                 return f64::NAN;
             }
 
-            let m = ALPHAP + p * (1.0 - ALPHAP - BETAP);
-            let aleph = n * p + m;
+            let h = p.mul_add(n + 0.25, 0.375); // p*(n + 1/4) + 3/8
+            if h <= 1.0 {
+                return sorted[0];
+            }
+            if h >= n {
+                return sorted[sorted.len() - 1];
+            }
 
-            // jStat: k = floor(clip(aleph, 1, n-1))
-            let k = aleph.clamp(1.0, n - 1.0).floor() as usize;
-            // jStat: gamma = clip(aleph - k, 0, 1)
-            let gamma = (aleph - k as f64).clamp(0.0, 1.0);
+            let j = h.floor();
+            let g = h - j;
 
-            // jStat uses 0-based indexing: sorted[k-1] and sorted[k]
-            let lower = sorted[k - 1];
-            let upper = sorted[k];
-
-            (1.0 - gamma) * lower + gamma * upper
+            // 1-indexed order statistics -> 0-indexed vector.
+            // Here, h is strictly between 1 and n, so j is in [1, n-1].
+            let j_usize = j as usize;
+            let lower = sorted[j_usize - 1];
+            let upper = sorted[j_usize];
+            lower + g * (upper - lower)
         })
         .collect()
 }

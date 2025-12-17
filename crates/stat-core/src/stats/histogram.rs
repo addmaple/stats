@@ -22,10 +22,25 @@ pub fn histogram(data: &[f64], bin_count: usize) -> Vec<usize> {
         return vec![0; bin_count];
     }
 
-    // First pass: find min/max using SIMD-optimized minmax
-    let (min_val, max_val) = minmax(data);
-
-    if min_val.is_nan() || max_val.is_nan() {
+    // First pass: find min/max over finite values only.
+    // NaN/±Inf are treated as out-of-domain for binning and skipped.
+    // This avoids surprising "all-zero histogram" behavior when a single NaN is present.
+    let mut min_val = f64::INFINITY;
+    let mut max_val = f64::NEG_INFINITY;
+    let mut finite_count = 0usize;
+    for &v in data {
+        if !v.is_finite() {
+            continue;
+        }
+        finite_count += 1;
+        if v < min_val {
+            min_val = v;
+        }
+        if v > max_val {
+            max_val = v;
+        }
+    }
+    if finite_count == 0 {
         return vec![0; bin_count];
     }
 
@@ -33,7 +48,7 @@ pub fn histogram(data: &[f64], bin_count: usize) -> Vec<usize> {
     let range = max_val - min_val;
     let mut bins = vec![0usize; bin_count];
     if range < f64::EPSILON {
-        bins[0] = data.len();
+        bins[0] = finite_count;
         return bins;
     }
 
@@ -42,11 +57,14 @@ pub fn histogram(data: &[f64], bin_count: usize) -> Vec<usize> {
     let last_bin = bin_count - 1;
 
     // Second pass: bin the values
-    // Note: We already checked for NaN in minmax, so we can skip NaN checks here
+    // Note: We already selected finite min/max, so skip non-finite values here too.
     // This loop can't be easily SIMD'd due to random writes to bins array
     unsafe {
         let bins_ptr = bins.as_mut_ptr();
         for &value in data {
+            if !value.is_finite() {
+                continue;
+            }
             // Calculate bin index: multiply by inverse instead of dividing
             // Since (value - min_val) >= 0, casting truncates (same as floor for non-negative)
             let bin_idx = ((value - min_val) * inv_bin_width) as usize;
@@ -60,6 +78,15 @@ pub fn histogram(data: &[f64], bin_count: usize) -> Vec<usize> {
     bins
 }
 
+#[inline]
+fn edges_valid(edges: &[f64]) -> bool {
+    // Must be totally ordered under partial_cmp (no NaN), and sorted non-decreasing.
+    if edges.iter().any(|e| e.is_nan()) {
+        return false;
+    }
+    edges.windows(2).all(|w| w[0] <= w[1])
+}
+
 /// Calculate a histogram with custom bin edges.
 ///
 /// # Arguments
@@ -70,6 +97,9 @@ pub fn histogram(data: &[f64], bin_count: usize) -> Vec<usize> {
 /// Vector of counts per bin. Values outside the range are not counted.
 pub fn histogram_edges(data: &[f64], edges: &[f64]) -> Vec<usize> {
     if edges.len() < 2 {
+        return vec![];
+    }
+    if !edges_valid(edges) {
         return vec![];
     }
 
@@ -121,6 +151,9 @@ pub fn histogram_edges(data: &[f64], edges: &[f64]) -> Vec<usize> {
 /// Vector of counts per bin. Values outside the range are clamped to first/last bin.
 pub fn histogram_edges_clamped(data: &[f64], edges: &[f64]) -> Vec<usize> {
     if edges.len() < 2 {
+        return vec![];
+    }
+    if !edges_valid(edges) {
         return vec![];
     }
 
@@ -217,9 +250,13 @@ pub fn bin_edges_fixed_width(data: &[f64], bins: usize) -> Vec<f64> {
     let mut edges = Vec::with_capacity(bins + 1);
     let bin_width = range / bins as f64;
 
-    for i in 0..=bins {
+    // Build edges [min, ..., max]. Force the last edge to equal max_val exactly to avoid
+    // floating-point roundoff leaving max_val slightly outside the final edge (which would
+    // cause histogram_edges() to drop the max element).
+    for i in 0..bins {
         edges.push(min_val + i as f64 * bin_width);
     }
+    edges.push(max_val);
 
     edges
 }
@@ -475,3 +512,4 @@ pub fn histogram_custom_with_edges(
         counts,
     }
 }
+

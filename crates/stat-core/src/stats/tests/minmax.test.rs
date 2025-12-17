@@ -26,3 +26,6 @@ fn test_range() {
     assert!(range(&[]).is_nan());
     assert_eq!(range(&[1.0, 5.0, 3.0, 9.0, 2.0]), 8.0);
 }
+
+
+

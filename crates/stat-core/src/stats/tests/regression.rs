@@ -110,3 +110,15 @@ fn test_regress_variants_edge_cases() {
     assert!(result_simd.slope.is_nan());
     assert!(result_kernels.slope.is_nan());
 }
+
+#[test]
+fn test_regress_rejects_nan_inputs() {
+    let x = [1.0, 2.0, f64::NAN, 4.0];
+    let y = [1.0, 2.0, 3.0, 4.0];
+
+    let r = regress(&x, &y);
+    assert!(r.slope.is_nan());
+    assert!(r.intercept.is_nan());
+    assert!(r.r_squared.is_nan());
+    assert!(r.residuals.is_empty());
+}
