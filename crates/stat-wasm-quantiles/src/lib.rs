@@ -27,10 +27,13 @@ impl ArrayResult {
     }
 }
 
-fn vec_to_array_result(mut data: Vec<f64>) -> ArrayResult {
+fn vec_to_array_result(data: Vec<f64>) -> ArrayResult {
+    // IMPORTANT: JS frees these buffers via `free_f64(ptr, len)` which assumes
+    // the allocation is exactly `len` elements. A `Vec` may have `capacity > len`,
+    // so we first convert it into a boxed slice (always sized to `len`).
     let len = data.len();
-    let ptr = data.as_mut_ptr() as usize;
-    std::mem::forget(data);
+    let boxed: Box<[f64]> = data.into_boxed_slice();
+    let ptr = Box::into_raw(boxed) as *mut f64 as usize;
     ArrayResult { ptr, len }
 }
 

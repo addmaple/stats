@@ -5,8 +5,8 @@ export class ArrayResult {
   private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  readonly ptr: number;
   readonly len: number;
+  readonly ptr: number;
   readonly is_empty: boolean;
 }
 
@@ -63,33 +63,33 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_arrayresult_free: (a: number, b: number) => void;
-  readonly arrayresult_ptr: (a: number) => number;
-  readonly arrayresult_len: (a: number) => number;
-  readonly arrayresult_is_empty: (a: number) => number;
-  readonly get_memory: () => any;
   readonly alloc_f64: (a: number) => number;
-  readonly free_f64: (a: number, b: number) => void;
-  readonly sum_f64: (a: number, b: number) => number;
-  readonly mean_f64: (a: number, b: number) => number;
-  readonly variance_f64: (a: number, b: number) => number;
-  readonly sample_variance_f64: (a: number, b: number) => number;
-  readonly stdev_f64: (a: number, b: number) => number;
-  readonly sample_stdev_f64: (a: number, b: number) => number;
+  readonly arrayresult_is_empty: (a: number) => number;
+  readonly arrayresult_len: (a: number) => number;
+  readonly arrayresult_ptr: (a: number) => number;
   readonly coeffvar_f64: (a: number, b: number) => number;
-  readonly min_f64: (a: number, b: number) => number;
+  readonly cumprod_f64: (a: number, b: number) => number;
+  readonly cumsum_f64: (a: number, b: number) => number;
+  readonly diff_f64: (a: number, b: number) => number;
+  readonly free_f64: (a: number, b: number) => void;
+  readonly geomean_f64: (a: number, b: number) => number;
+  readonly get_memory: () => any;
+  readonly histogram_f64: (a: number, b: number, c: number) => number;
+  readonly kurtosis_f64: (a: number, b: number) => number;
   readonly max_f64: (a: number, b: number) => number;
+  readonly mean_f64: (a: number, b: number) => number;
+  readonly median_f64: (a: number, b: number) => number;
+  readonly min_f64: (a: number, b: number) => number;
+  readonly mode_f64: (a: number, b: number) => number;
   readonly product_f64: (a: number, b: number) => number;
   readonly range_f64: (a: number, b: number) => number;
-  readonly median_f64: (a: number, b: number) => number;
-  readonly mode_f64: (a: number, b: number) => number;
-  readonly geomean_f64: (a: number, b: number) => number;
-  readonly skewness_f64: (a: number, b: number) => number;
-  readonly kurtosis_f64: (a: number, b: number) => number;
-  readonly cumsum_f64: (a: number, b: number) => number;
-  readonly cumprod_f64: (a: number, b: number) => number;
-  readonly diff_f64: (a: number, b: number) => number;
   readonly rank_f64: (a: number, b: number) => number;
-  readonly histogram_f64: (a: number, b: number, c: number) => number;
+  readonly sample_stdev_f64: (a: number, b: number) => number;
+  readonly sample_variance_f64: (a: number, b: number) => number;
+  readonly skewness_f64: (a: number, b: number) => number;
+  readonly stdev_f64: (a: number, b: number) => number;
+  readonly sum_f64: (a: number, b: number) => number;
+  readonly variance_f64: (a: number, b: number) => number;
   readonly __wbindgen_externrefs: WebAssembly.Table;
   readonly __wbindgen_start: () => void;
 }
