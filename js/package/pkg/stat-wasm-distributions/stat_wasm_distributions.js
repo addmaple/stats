@@ -51,15 +51,15 @@ export class ArrayResult {
     /**
      * @returns {number}
      */
-    get ptr() {
-        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
+    get len() {
+        const ret = wasm.arrayresult_len(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
      * @returns {number}
      */
-    get len() {
-        const ret = wasm.arrayresult_len(this.__wbg_ptr);
+    get ptr() {
+        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**

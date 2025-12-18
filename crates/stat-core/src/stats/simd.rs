@@ -1,11 +1,5 @@
 use wide::f64x4;
 
-#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
-use core::arch::wasm32::{
-    f32x4_add, f32x4_extract_lane, f32x4_mul, f32x4_splat, f32x4_sub, f64x2_add,
-    f64x2_extract_lane, f64x2_mul, f64x2_splat, f64x2_sub, v128, v128_load, v128_store,
-};
-
 // =============================================================================
 // SIMD Infrastructure
 // =============================================================================

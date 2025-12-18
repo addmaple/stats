@@ -201,16 +201,16 @@ export class AnovaResult {
     /**
      * @returns {number}
      */
-    get f_score() {
-        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
-        return ret;
+    get df_between() {
+        const ret = wasm.anovaresult_df_between(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * @returns {number}
      */
-    get df_between() {
-        const ret = wasm.anovaresult_df_between(this.__wbg_ptr);
-        return ret >>> 0;
+    get f_score() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
+        return ret;
     }
     /**
      * @returns {number}
@@ -243,15 +243,15 @@ export class ArrayResult {
     /**
      * @returns {number}
      */
-    get ptr() {
-        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
+    get len() {
+        const ret = wasm.arrayresult_len(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
      * @returns {number}
      */
-    get len() {
-        const ret = wasm.arrayresult_len(this.__wbg_ptr);
+    get ptr() {
+        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
@@ -288,9 +288,9 @@ export class ChiSquareResult {
     /**
      * @returns {number}
      */
-    get statistic() {
-        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
-        return ret;
+    get df() {
+        const ret = wasm.chisquareresult_df(this.__wbg_ptr);
+        return ret >>> 0;
     }
     /**
      * @returns {number}
@@ -302,9 +302,9 @@ export class ChiSquareResult {
     /**
      * @returns {number}
      */
-    get df() {
-        const ret = wasm.chisquareresult_df(this.__wbg_ptr);
-        return ret >>> 0;
+    get statistic() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
+        return ret;
     }
 }
 if (Symbol.dispose) ChiSquareResult.prototype[Symbol.dispose] = ChiSquareResult.prototype.free;
@@ -544,11 +544,11 @@ export class TestResult {
         wasm.__wbg_testresult_free(ptr, 0);
     }
     /**
-     * @returns {number}
+     * @returns {number | undefined}
      */
-    get statistic() {
-        const ret = wasm.quartilesresult_q3(this.__wbg_ptr);
-        return ret;
+    get df() {
+        const ret = wasm.testresult_df(this.__wbg_ptr);
+        return ret[0] === 0 ? undefined : ret[1];
     }
     /**
      * @returns {number}
@@ -558,11 +558,11 @@ export class TestResult {
         return ret;
     }
     /**
-     * @returns {number | undefined}
+     * @returns {number}
      */
-    get df() {
-        const ret = wasm.testresult_df(this.__wbg_ptr);
-        return ret[0] === 0 ? undefined : ret[1];
+    get statistic() {
+        const ret = wasm.quartilesresult_q3(this.__wbg_ptr);
+        return ret;
     }
 }
 if (Symbol.dispose) TestResult.prototype[Symbol.dispose] = TestResult.prototype.free;
@@ -596,10 +596,19 @@ export class TukeyHsdResult {
         return ret >>> 0;
     }
     /**
+     * Get a specific comparison by index
+     * @param {number} index
+     * @returns {TukeyPairResult | undefined}
+     */
+    get_comparison(index) {
+        const ret = wasm.tukeyhsdresult_get_comparison(this.__wbg_ptr, index);
+        return ret === 0 ? undefined : TukeyPairResult.__wrap(ret);
+    }
+    /**
      * @returns {number}
      */
-    get df_within() {
-        const ret = wasm.tukeyhsdresult_df_within(this.__wbg_ptr);
+    get num_comparisons() {
+        const ret = wasm.tukeyhsdresult_num_comparisons(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
@@ -612,18 +621,9 @@ export class TukeyHsdResult {
     /**
      * @returns {number}
      */
-    get num_comparisons() {
-        const ret = wasm.tukeyhsdresult_num_comparisons(this.__wbg_ptr);
+    get df_within() {
+        const ret = wasm.tukeyhsdresult_df_within(this.__wbg_ptr);
         return ret >>> 0;
-    }
-    /**
-     * Get a specific comparison by index
-     * @param {number} index
-     * @returns {TukeyPairResult | undefined}
-     */
-    get_comparison(index) {
-        const ret = wasm.tukeyhsdresult_get_comparison(this.__wbg_ptr, index);
-        return ret === 0 ? undefined : TukeyPairResult.__wrap(ret);
     }
 }
 if (Symbol.dispose) TukeyHsdResult.prototype[Symbol.dispose] = TukeyHsdResult.prototype.free;
@@ -652,6 +652,13 @@ export class TukeyPairResult {
     /**
      * @returns {number}
      */
+    get q_statistic() {
+        const ret = wasm.chisquareresult_p_value(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
     get group1() {
         const ret = wasm.tukeypairresult_group1(this.__wbg_ptr);
         return ret >>> 0;
@@ -662,20 +669,6 @@ export class TukeyPairResult {
     get group2() {
         const ret = wasm.tukeypairresult_group2(this.__wbg_ptr);
         return ret >>> 0;
-    }
-    /**
-     * @returns {number}
-     */
-    get mean_diff() {
-        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
-        return ret;
-    }
-    /**
-     * @returns {number}
-     */
-    get q_statistic() {
-        const ret = wasm.chisquareresult_p_value(this.__wbg_ptr);
-        return ret;
     }
     /**
      * @returns {number}
@@ -696,6 +689,13 @@ export class TukeyPairResult {
      */
     get ci_upper() {
         const ret = wasm.tukeypairresult_ci_upper(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get mean_diff() {
+        const ret = wasm.anovaresult_f_score(this.__wbg_ptr);
         return ret;
     }
 }

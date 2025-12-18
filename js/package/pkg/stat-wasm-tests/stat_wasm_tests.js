@@ -73,15 +73,15 @@ export class ArrayResult {
     /**
      * @returns {number}
      */
-    get ptr() {
-        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
+    get len() {
+        const ret = wasm.arrayresult_len(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
      * @returns {number}
      */
-    get len() {
-        const ret = wasm.arrayresult_len(this.__wbg_ptr);
+    get ptr() {
+        const ret = wasm.arrayresult_ptr(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
@@ -162,11 +162,11 @@ export class TestResult {
         wasm.__wbg_testresult_free(ptr, 0);
     }
     /**
-     * @returns {number}
+     * @returns {number | undefined}
      */
-    get statistic() {
-        const ret = wasm.regressionresult_r_squared(this.__wbg_ptr);
-        return ret;
+    get df() {
+        const ret = wasm.testresult_df(this.__wbg_ptr);
+        return ret[0] === 0 ? undefined : ret[1];
     }
     /**
      * @returns {number}
@@ -176,11 +176,11 @@ export class TestResult {
         return ret;
     }
     /**
-     * @returns {number | undefined}
+     * @returns {number}
      */
-    get df() {
-        const ret = wasm.testresult_df(this.__wbg_ptr);
-        return ret[0] === 0 ? undefined : ret[1];
+    get statistic() {
+        const ret = wasm.regressionresult_r_squared(this.__wbg_ptr);
+        return ret;
     }
 }
 if (Symbol.dispose) TestResult.prototype[Symbol.dispose] = TestResult.prototype.free;

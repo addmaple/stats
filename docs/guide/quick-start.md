@@ -114,6 +114,6 @@ console.log(pdfs);  // Float64Array [0.3989..., 0.2420..., ...]
 ## Next Steps
 
 - Check out the [Examples](/examples/) for more detailed use cases
-- Browse the [API Reference](/api/README) for all available functions
+- Browse the [API Reference](/api/) for all available functions
 - Learn about [Performance](/guide/performance) optimizations
 
