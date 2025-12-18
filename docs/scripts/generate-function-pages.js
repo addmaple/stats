@@ -203,6 +203,63 @@ async function generatePages() {
       
       console.log(`Generated page for ${functionName}`);
     }
+
+    // Generate category pages to fix 404s in sidebar
+    for (const [category, funcs] of Object.entries(functionCategories)) {
+      const catTitle = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const categoryContent = `---
+title: ${catTitle}
+description: ${catTitle} functions in @stats/core
+---
+
+# ${catTitle}
+
+This page lists all functions in the **${catTitle}** category.
+
+## Functions
+
+${funcs.map(f => {
+  const p = generatedPages.find(gp => gp.functionName === f);
+  return p ? `- [${f}](${p.path})` : `- ${f} (no documentation generated)`;
+}).join('\n')}
+
+## More Information
+For a complete list of all available functions, see the [Function Reference](/api/functions/).
+`;
+      const categoryPath = join(dirname(outputDir), `${category}.md`);
+      await writeFile(categoryPath, categoryContent);
+      console.log(`Generated category page: ${category}`);
+    }
+
+    // Special case for Initialization page
+    const initPageContent = `---
+title: Initialization
+description: How to initialize @stats/core
+---
+
+# Initialization
+
+Before using any functions from \`@stats/core\`, you must initialize the library. This is because it uses WebAssembly under the hood, which needs to be loaded and initialized.
+
+## init()
+
+The \`init\` function initializes the WebAssembly module. It is SIMD-aware and will automatically use SIMD if supported by the environment.
+
+### Usage
+
+\`\`\`javascript
+import { init } from '@addmaple/stats';
+
+await init();
+// Now you can use other functions
+\`\`\`
+
+### Example
+
+<InteractiveCode default-code="import { init, mean } from '@addmaple/stats';&#10;await init();&#10;&#10;const result = mean([1, 2, 3, 4, 5]);&#10;result;" />
+`;
+    await writeFile(join(dirname(outputDir), 'initialization.md'), initPageContent);
+    console.log('Generated initialization.md');
     
     // Generate index page
     const indexContent = `---

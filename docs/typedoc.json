@@ -10,7 +10,7 @@
   "excludeProtected": true,
   "excludeExternals": true,
   "plugin": ["typedoc-plugin-markdown"],
-  "entryDocument": "README.md",
+  "entryDocument": "index.md",
   "hidePageTitle": false,
   "hideGenerator": true,
   "hideBreadcrumbs": false,

@@ -5,8 +5,8 @@ export class ArrayResult {
   private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  readonly len: number;
   readonly ptr: number;
+  readonly len: number;
   readonly is_empty: boolean;
 }
 
@@ -54,28 +54,28 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_arrayresult_free: (a: number, b: number) => void;
-  readonly __wbg_quartilesresult_free: (a: number, b: number) => void;
-  readonly alloc_f64: (a: number) => number;
-  readonly arrayresult_is_empty: (a: number) => number;
-  readonly arrayresult_len: (a: number) => number;
   readonly arrayresult_ptr: (a: number) => number;
-  readonly free_f64: (a: number, b: number) => void;
+  readonly arrayresult_len: (a: number) => number;
+  readonly arrayresult_is_empty: (a: number) => number;
   readonly get_memory: () => any;
-  readonly histogram_edges_f64: (a: number, b: number, c: number, d: number) => number;
-  readonly histogram_f64: (a: number, b: number, c: number) => number;
-  readonly iqr_f64: (a: number, b: number) => number;
-  readonly percentile_exclusive_f64: (a: number, b: number, c: number) => number;
+  readonly alloc_f64: (a: number) => number;
+  readonly free_f64: (a: number, b: number) => void;
   readonly percentile_f64: (a: number, b: number, c: number, d: number) => number;
   readonly percentile_inclusive_f64: (a: number, b: number, c: number) => number;
+  readonly percentile_exclusive_f64: (a: number, b: number, c: number) => number;
   readonly percentile_of_score_f64: (a: number, b: number, c: number, d: number) => number;
-  readonly quantiles_f64: (a: number, b: number, c: number, d: number) => number;
-  readonly quartiles_f64: (a: number, b: number) => number;
+  readonly __wbg_quartilesresult_free: (a: number, b: number) => void;
   readonly quartilesresult_q1: (a: number) => number;
   readonly quartilesresult_q2: (a: number) => number;
   readonly quartilesresult_q3: (a: number) => number;
-  readonly weighted_median_f64: (a: number, b: number, c: number, d: number) => number;
+  readonly quartiles_f64: (a: number, b: number) => number;
+  readonly iqr_f64: (a: number, b: number) => number;
+  readonly quantiles_f64: (a: number, b: number, c: number, d: number) => number;
   readonly weighted_percentile_f64: (a: number, b: number, c: number, d: number, e: number) => number;
   readonly weighted_quantiles_f64: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly weighted_median_f64: (a: number, b: number, c: number, d: number) => number;
+  readonly histogram_f64: (a: number, b: number, c: number) => number;
+  readonly histogram_edges_f64: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_externrefs: WebAssembly.Table;
   readonly __wbindgen_start: () => void;
 }
