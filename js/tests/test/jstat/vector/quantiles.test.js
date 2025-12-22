@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, quantiles } from '@stats/core';
+import { init, quantiles } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: quantiles-test.js

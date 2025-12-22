@@ -1,63 +1,23 @@
+#![allow(clippy::missing_safety_doc, clippy::needless_range_loop)]
 #![allow(clippy::not_unsafe_ptr_arg_deref, dead_code)]
 
-use wasm_bindgen::prelude::*;
+use std::alloc::{alloc, dealloc, Layout};
+use std::mem;
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct ArrayResult {
-    ptr: usize,
-    len: usize,
+#[no_mangle]
+pub unsafe extern "C" fn alloc_bytes(len: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    alloc(layout)
 }
 
-#[wasm_bindgen]
-impl ArrayResult {
-    #[wasm_bindgen(getter)]
-    pub fn ptr(&self) -> usize {
-        self.ptr
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
+#[no_mangle]
+pub unsafe extern "C" fn free_bytes(ptr: *mut u8, len: usize) {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    dealloc(ptr, layout);
 }
 
-fn vec_to_array_result(data: Vec<f64>) -> ArrayResult {
-    // IMPORTANT: JS frees these buffers via `free_f64(ptr, len)` which assumes
-    // the allocation is exactly `len` elements. A `Vec` may have `capacity > len`,
-    // so we first convert it into a boxed slice (always sized to `len`).
-    let len = data.len();
-    let boxed: Box<[f64]> = data.into_boxed_slice();
-    let ptr = Box::into_raw(boxed) as *mut f64 as usize;
-    ArrayResult { ptr, len }
-}
-
-// Export memory for typed array views
-#[wasm_bindgen]
-pub fn get_memory() -> JsValue {
-    wasm_bindgen::memory()
-}
-
-// Memory allocation helpers
-#[wasm_bindgen]
-pub fn alloc_f64(len: usize) -> *mut f64 {
-    let mut vec = Vec::<f64>::with_capacity(len);
-    let ptr = vec.as_mut_ptr();
-    std::mem::forget(vec);
-    ptr
-}
-
-#[wasm_bindgen]
-pub fn free_f64(ptr: *mut f64, len: usize) {
-    unsafe {
-        let _ = Vec::from_raw_parts(ptr, len, len);
-    }
-}
+#[no_mangle] pub unsafe extern "C" fn alloc_f64(len: usize) -> *mut f64 { alloc_bytes(len * 8) as *mut f64 }
+#[no_mangle] pub unsafe extern "C" fn free_f64(ptr: *mut f64, len: usize) { free_bytes(ptr as *mut u8, len * 8); }
 
 fn slice_from<'a>(ptr: *const f64, len: usize) -> &'a [f64] {
     unsafe { std::slice::from_raw_parts(ptr, len) }
@@ -67,132 +27,33 @@ fn slice_from_mut<'a>(ptr: *mut f64, len: usize) -> &'a mut [f64] {
     unsafe { std::slice::from_raw_parts_mut(ptr, len) }
 }
 
-// Basic statistics functions
-#[wasm_bindgen]
-pub fn sum_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::sum(data)
-}
+#[no_mangle] pub unsafe extern "C" fn sum_f64(ptr: *const f64, len: usize) -> f64 { stat_core::sum(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn mean_f64(ptr: *const f64, len: usize) -> f64 { stat_core::mean(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn variance_f64(ptr: *const f64, len: usize) -> f64 { stat_core::variance(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn sample_variance_f64(ptr: *const f64, len: usize) -> f64 { stat_core::sample_variance(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn stdev_f64(ptr: *const f64, len: usize) -> f64 { stat_core::stdev(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn sample_stdev_f64(ptr: *const f64, len: usize) -> f64 { stat_core::sample_stdev(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn min_f64(ptr: *const f64, len: usize) -> f64 { stat_core::min(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn max_f64(ptr: *const f64, len: usize) -> f64 { stat_core::max(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn product_f64(ptr: *const f64, len: usize) -> f64 { stat_core::product(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn range_f64(ptr: *const f64, len: usize) -> f64 { stat_core::range(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn median_f64(ptr: *const f64, len: usize) -> f64 { stat_core::median(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn mode_f64(ptr: *const f64, len: usize) -> f64 { stat_core::mode(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn geomean_f64(ptr: *const f64, len: usize) -> f64 { stat_core::geomean(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn skewness_f64(ptr: *const f64, len: usize) -> f64 { stat_core::skewness(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn kurtosis_f64(ptr: *const f64, len: usize) -> f64 { stat_core::kurtosis(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn coeffvar_f64(ptr: *const f64, len: usize) -> f64 { stat_core::coeffvar(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn meandev_f64(ptr: *const f64, len: usize) -> f64 { stat_core::meandev(slice_from(ptr, len)) }
+#[no_mangle] pub unsafe extern "C" fn meddev_f64(ptr: *const f64, len: usize) -> f64 { stat_core::meddev(slice_from(ptr, len)) }
 
-#[wasm_bindgen]
-pub fn mean_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::mean(data)
-}
+#[no_mangle] pub unsafe extern "C" fn cumsum_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { let result = stat_core::cumsum(slice_from(ptr, len)); slice_from_mut(out_ptr, len).copy_from_slice(&result); len as isize }
+#[no_mangle] pub unsafe extern "C" fn cumprod_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { let result = stat_core::cumprod(slice_from(ptr, len)); slice_from_mut(out_ptr, len).copy_from_slice(&result); len as isize }
+#[no_mangle] pub unsafe extern "C" fn diff_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { if len < 1 { return 0; } let result = stat_core::diff(slice_from(ptr, len)); slice_from_mut(out_ptr, len - 1).copy_from_slice(&result); (len - 1) as isize }
+#[no_mangle] pub unsafe extern "C" fn rank_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { let result = stat_core::rank(slice_from(ptr, len)); slice_from_mut(out_ptr, len).copy_from_slice(&result); len as isize }
+#[no_mangle] pub unsafe extern "C" fn deviation_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { let result = stat_core::deviation(slice_from(ptr, len)); slice_from_mut(out_ptr, len).copy_from_slice(&result); len as isize }
 
-#[wasm_bindgen]
-pub fn variance_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::variance(data)
-}
+#[no_mangle] pub unsafe extern "C" fn pooledvariance_f64(d1p: *const f64, d1l: usize, d2p: *const f64, d2l: usize) -> f64 { stat_core::pooledvariance(slice_from(d1p, d1l), slice_from(d2p, d2l)) }
+#[no_mangle] pub unsafe extern "C" fn pooledstdev_f64(d1p: *const f64, d1l: usize, d2p: *const f64, d2l: usize) -> f64 { stat_core::pooledstdev(slice_from(d1p, d1l), slice_from(d2p, d2l)) }
+#[no_mangle] pub unsafe extern "C" fn stan_moment_f64(ptr: *const f64, len: usize, k: usize) -> f64 { stat_core::stan_moment(slice_from(ptr, len), k) }
 
-#[wasm_bindgen]
-pub fn sample_variance_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::sample_variance(data)
-}
-
-#[wasm_bindgen]
-pub fn stdev_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::stdev(data)
-}
-
-#[wasm_bindgen]
-pub fn sample_stdev_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::sample_stdev(data)
-}
-
-#[wasm_bindgen]
-pub fn coeffvar_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::coeffvar(data)
-}
-
-#[wasm_bindgen]
-pub fn min_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::min(data)
-}
-
-#[wasm_bindgen]
-pub fn max_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::max(data)
-}
-
-#[wasm_bindgen]
-pub fn product_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::product(data)
-}
-
-#[wasm_bindgen]
-pub fn range_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::range(data)
-}
-
-#[wasm_bindgen]
-pub fn median_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::median(data)
-}
-
-#[wasm_bindgen]
-pub fn mode_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::mode(data)
-}
-
-#[wasm_bindgen]
-pub fn geomean_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::geomean(data)
-}
-
-#[wasm_bindgen]
-pub fn skewness_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::skewness(data)
-}
-
-#[wasm_bindgen]
-pub fn kurtosis_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::kurtosis(data)
-}
-
-#[wasm_bindgen]
-pub fn cumsum_f64(ptr: *const f64, len: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    vec_to_array_result(stat_core::cumsum(data))
-}
-
-#[wasm_bindgen]
-pub fn cumprod_f64(ptr: *const f64, len: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    vec_to_array_result(stat_core::cumprod(data))
-}
-
-#[wasm_bindgen]
-pub fn diff_f64(ptr: *const f64, len: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    vec_to_array_result(stat_core::diff(data))
-}
-
-#[wasm_bindgen]
-pub fn rank_f64(ptr: *const f64, len: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    vec_to_array_result(stat_core::rank(data))
-}
-
-#[wasm_bindgen]
-pub fn histogram_f64(ptr: *const f64, len: usize, bin_count: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    let bins = stat_core::histogram(data, bin_count);
-    // Convert usize to f64 for JS compatibility
-    let bins_f64: Vec<f64> = bins.iter().map(|&x| x as f64).collect();
-    vec_to_array_result(bins_f64)
-}
+#[no_mangle] pub unsafe extern "C" fn histogram_f64(ptr: *const f64, len: usize, bc: usize, out_ptr: *mut f64) -> isize { let bins = stat_core::histogram(slice_from(ptr, len), bc); let out = slice_from_mut(out_ptr, bc); for i in 0..bc { out[i] = bins[i] as f64; } bc as isize }

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, meddev } from '@stats/core';
+import { init, meddev } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: meddev-test.js

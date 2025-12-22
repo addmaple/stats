@@ -8,13 +8,30 @@ import type { CorrelationWasmModule } from './wasm-types.js';
 
 let wasmModule: CorrelationWasmModule | null = null;
 
+/**
+ * Get the current WASM module instance.
+ */
+export function getCorrelationWasm(): CorrelationWasmModule | null {
+  return wasmModule;
+}
+
+/**
+ * Set the WASM module instance.
+ */
+export function setCorrelationWasm(mod: CorrelationWasmModule): void {
+  wasmModule = mod;
+}
+
 const requireWasm = createRequireWasm(() => wasmModule);
 
-export async function init(): Promise<void> {
+/**
+ * Initialize the correlation wasm module.
+ */
+export async function init(options: { inline?: boolean } = {}): Promise<void> {
   if (wasmModule) {
     return;
   }
-  const mod = await loadWasmModule('../pkg/stat-wasm-correlation/stat_wasm_correlation.js');
+  const mod = await loadWasmModule('../pkg/stat-wasm-correlation', options.inline);
   wasmModule = mod as unknown as CorrelationWasmModule;
 }
 
@@ -43,14 +60,23 @@ function correlationHelper(
   };
 }
 
+/**
+ * Calculate the covariance between two arrays.
+ */
 export const covariance = correlationHelper(
   (xPtr, xLen, yPtr, yLen) => requireWasm().covariance_f64(xPtr, xLen, yPtr, yLen)
 );
 
+/**
+ * Calculate the Pearson correlation coefficient.
+ */
 export const corrcoeff = correlationHelper(
   (xPtr, xLen, yPtr, yLen) => requireWasm().corrcoeff_f64(xPtr, xLen, yPtr, yLen)
 );
 
+/**
+ * Calculate the Spearman rank correlation coefficient.
+ */
 export const spearmancoeff = correlationHelper(
   (xPtr, xLen, yPtr, yLen) => requireWasm().spearmancoeff_f64(xPtr, xLen, yPtr, yLen)
 );

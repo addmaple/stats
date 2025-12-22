@@ -1,0 +1,15 @@
+{
+  "outDir": "pkg",
+  "artifactBaseName": "stat_wasm_correlation",
+  "autoInit": "lazy",
+  "targets": {
+    "baseline": true,
+    "simd": true
+  },
+  "js": {
+    "emit": ["node", "browser", "inline"],
+    "custom": "src/wrapper.js"
+  },
+  "exports": []
+}
+

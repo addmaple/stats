@@ -8,13 +8,30 @@ import type { DistributionsWasmModule } from './wasm-types.js';
 
 let wasmModule: DistributionsWasmModule | null = null;
 
+/**
+ * Get the current WASM module instance.
+ */
+export function getDistributionsWasm(): DistributionsWasmModule | null {
+  return wasmModule;
+}
+
+/**
+ * Set the WASM module instance.
+ */
+export function setDistributionsWasm(mod: DistributionsWasmModule): void {
+  wasmModule = mod;
+}
+
 const requireWasm = createRequireWasm(() => wasmModule);
 
-export async function init(): Promise<void> {
+/**
+ * Initialize the distributions wasm module.
+ */
+export async function init(options: { inline?: boolean } = {}): Promise<void> {
   if (wasmModule) {
     return;
   }
-  const mod = await loadWasmModule('../pkg/stat-wasm-distributions/stat_wasm_distributions.js');
+  const mod = await loadWasmModule('../pkg/stat-wasm-distributions', options.inline);
   wasmModule = mod as unknown as DistributionsWasmModule;
 }
 

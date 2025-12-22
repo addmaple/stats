@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, ztest } from '@stats/core';
+import { init, ztest } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Note: Our ztest API differs from jStat's

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, mode } from '@stats/core';
+import { init, mode } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: mode-test.js

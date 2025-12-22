@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, quantiles, percentiles } from '@stats/core';
+import { init, quantiles, percentiles } from '@addmaple/stats';
 import jStat from 'jstat';
 
 describe('percentiles helper', () => {

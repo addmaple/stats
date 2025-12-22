@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { init, corrcoeff, spearmancoeff, histogram } from '@stats/core';
+import { init, corrcoeff, spearmancoeff, histogram } from '@addmaple/stats';
 
 describe('pathological inputs (wasm boundary)', () => {
   before(async () => {
@@ -32,7 +32,7 @@ describe('pathological inputs (wasm boundary)', () => {
   });
 
   it('histogramEdges: invalid edges return empty (no panic)', async () => {
-    const q = await import('@stats/core/quantiles');
+    const q = await import('@addmaple/stats/quantiles');
     await q.init();
 
     const data = [1, 2, 3];
@@ -48,6 +48,7 @@ describe('pathological inputs (wasm boundary)', () => {
     assert.equal(r2.length, 0);
   });
 });
+
 
 
 

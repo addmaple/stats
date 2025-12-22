@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, diff } from '@stats/core';
+import { init, diff } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: diff-test.js

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, sum } from '@stats/core';
+import { init, sum } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: sum-test.js
@@ -40,6 +40,7 @@ describe('sum - jstat compatibility', () => {
   it.skip('sum full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

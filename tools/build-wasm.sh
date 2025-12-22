@@ -19,3 +19,4 @@ echo "Build complete! Output in crates/stat-wasm/pkg/"
 
 
 
+

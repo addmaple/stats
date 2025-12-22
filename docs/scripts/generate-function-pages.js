@@ -5,13 +5,13 @@
  * Creates a markdown file for each exported function with interactive code examples
  */
 
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const srcPath = join(__dirname, '../../js/package/src/index.ts');
+const srcDir = join(__dirname, '../../js/package/src');
 const outputDir = join(__dirname, '../api/functions');
 
 // Function categories for organization
@@ -33,8 +33,19 @@ function extractJSDoc(tsContent, functionName) {
     'm'
   );
   
+  const functionIndex = tsContent.search(functionRegex);
+  if (functionIndex === -1) {
+    // Try const definition for correlation helpers
+    const constRegex = new RegExp(
+      `(?:export\\s+)?const\\s+${functionName}\\s*\\=`,
+      'm'
+    );
+    if (tsContent.search(constRegex) === -1) return null;
+  }
+  
   // Find JSDoc comments before the function
-  const beforeFunction = tsContent.substring(0, tsContent.search(functionRegex));
+  const searchIndex = tsContent.search(functionRegex) !== -1 ? tsContent.search(functionRegex) : tsContent.search(new RegExp(`(?:export\\s+)?const\\s+${functionName}\\s*\\=`, 'm'));
+  const beforeFunction = tsContent.substring(0, searchIndex);
   const jsdocRegex = /\/\*\*([\s\S]*?)\*\//g;
   const matches = [...beforeFunction.matchAll(jsdocRegex)];
   
@@ -157,51 +168,77 @@ ${paramsTable}${returnsSection}${examplesSection}
 
 async function generatePages() {
   try {
-    // Read TypeScript source
-    const tsContent = await readFile(srcPath, 'utf-8');
+    // Read all TypeScript files in srcDir
+    const files = await readdir(srcDir);
+    const tsFiles = files.filter(f => f.endsWith('.ts') && f !== 'index.ts' && f !== 'wasm-types.ts' && f !== 'shared.ts');
     
     // Create output directory
     await mkdir(outputDir, { recursive: true });
     
-    // Find all exported functions
-    const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(/g;
-    const functions = [];
-    let match;
-    
-    while ((match = functionRegex.exec(tsContent)) !== null) {
-      const functionName = match[1];
-      // Skip init function
-      if (functionName === 'init') continue;
-      functions.push(functionName);
-    }
-    
-    console.log(`Found ${functions.length} functions`);
-    
-    // Generate pages for each function
+    // Generate pages for each function in each file
     const generatedPages = [];
     
-    for (const functionName of functions) {
-      const jsdoc = extractJSDoc(tsContent, functionName);
+    for (const file of tsFiles) {
+      const filePath = join(srcDir, file);
+      const tsContent = await readFile(filePath, 'utf-8');
       
-      // Find category
-      let category = 'other';
-      for (const [cat, funcs] of Object.entries(functionCategories)) {
-        if (funcs.includes(functionName)) {
-          category = cat;
-          break;
+      // Find all exported functions
+      const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(/g;
+      let match;
+      while ((match = functionRegex.exec(tsContent)) !== null) {
+        const functionName = match[1];
+        if (functionName === 'init' || functionName.startsWith('_')) continue;
+        if (functionName.startsWith('get') && functionName.endsWith('Wasm')) continue;
+        if (functionName.startsWith('set') && functionName.endsWith('Wasm')) continue;
+        
+        const jsdoc = extractJSDoc(tsContent, functionName);
+        
+        // Find category
+        let category = 'other';
+        for (const [cat, funcs] of Object.entries(functionCategories)) {
+          if (funcs.includes(functionName)) {
+            category = cat;
+            break;
+          }
         }
+        
+        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category);
+        const functionDir = join(outputDir, functionName);
+        await mkdir(functionDir, { recursive: true });
+        const pagePath = join(functionDir, 'index.md');
+        
+        await writeFile(pagePath, pageContent);
+        generatedPages.push({ functionName, category, path: `/api/functions/${functionName}/` });
+        console.log(`Generated page for ${functionName} (from ${file})`);
       }
       
-      const pageContent = generateFunctionPage(functionName, jsdoc || {}, category);
-      // Create directory for each function with index.md (VitePress convention)
-      const functionDir = join(outputDir, functionName);
-      await mkdir(functionDir, { recursive: true });
-      const pagePath = join(functionDir, 'index.md');
-      
-      await writeFile(pagePath, pageContent);
-      generatedPages.push({ functionName, category, path: `/api/functions/${functionName}/` });
-      
-      console.log(`Generated page for ${functionName}`);
+      // Also check for exported consts (like correlation helpers)
+      const constRegex = /export\s+const\s+(\w+)\s*\=/g;
+      while ((match = constRegex.exec(tsContent)) !== null) {
+        const functionName = match[1];
+        if (functionName === 'init' || functionName.startsWith('_')) continue;
+        
+        const jsdoc = extractJSDoc(tsContent, functionName);
+        if (!jsdoc) continue; // Only if it has JSDoc, to avoid random constants
+        
+        // Find category
+        let category = 'other';
+        for (const [cat, funcs] of Object.entries(functionCategories)) {
+          if (funcs.includes(functionName)) {
+            category = cat;
+            break;
+          }
+        }
+        
+        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category);
+        const functionDir = join(outputDir, functionName);
+        await mkdir(functionDir, { recursive: true });
+        const pagePath = join(functionDir, 'index.md');
+        
+        await writeFile(pagePath, pageContent);
+        generatedPages.push({ functionName, category, path: `/api/functions/${functionName}/` });
+        console.log(`Generated page for ${functionName} (const from ${file})`);
+      }
     }
 
     // Generate category pages to fix 404s in sidebar
@@ -298,4 +335,3 @@ ${generatedPages.map(p => `- [${p.functionName}](${p.path})`).join('\n')}
 }
 
 generatePages();
-

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, rank } from '@stats/core';
+import { init, rank } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: rank-test.js

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, stdev } from '@stats/core';
+import { init, stdev } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: stdev-test.js
@@ -46,6 +46,7 @@ describe('stdev - jstat compatibility', () => {
   it.skip('stdev matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

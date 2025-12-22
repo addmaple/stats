@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, variance } from '@stats/core';
+import { init, variance } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: variance-test.js
@@ -46,6 +46,7 @@ describe('variance - jstat compatibility', () => {
   it.skip('variance matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

@@ -12,7 +12,7 @@ import {
   histogram,
   quantiles,
   corrcoeff,
-} from '@stats/core';
+} from '@addmaple/stats';
 
 function assertF64ArrayClose(actual, expected, eps = 1e-12) {
   assert.equal(actual.length, expected.length);
@@ -77,6 +77,7 @@ describe('typed/array-like inputs', () => {
     assert.equal(corrcoeff(x, y), corrcoeff(xArr, yArr));
   });
 });
+
 
 
 

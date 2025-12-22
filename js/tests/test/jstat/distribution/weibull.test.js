@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, weibull } from '@stats/core';
+import { init, weibull } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: weibull-test.js

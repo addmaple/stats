@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, spearmancoeff } from '@stats/core';
+import { init, spearmancoeff } from '@addmaple/stats';
 import jStat from 'jstat';
 
 const tol = 0.0000001;

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, max } from '@stats/core';
+import { init, max } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: max-test.js
@@ -40,6 +40,7 @@ describe('max - jstat compatibility', () => {
   it.skip('max full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

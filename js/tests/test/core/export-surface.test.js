@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import * as core from '@stats/core';
+import * as core from '@addmaple/stats';
 
 function isFn(x) {
   return typeof x === 'function';
@@ -156,14 +156,21 @@ describe('export surface smoke (coverage)', () => {
     // Ensure the module exports are stable
     for (const [k, v] of Object.entries(core)) {
       // Everything exported should be a function for this package, except BinningPresets which is an object
+      // and WASM_NOT_INITIALIZED_ERROR which is a string
       if (k === 'BinningPresets') {
         assert.ok(typeof v === 'object' && v !== null, `export ${k} should be an object`);
+      } else if (k === 'WASM_NOT_INITIALIZED_ERROR') {
+        assert.equal(typeof v, 'string', `export ${k} should be a string`);
+      } else if (k === 'init') {
+        assert.ok(typeof v === 'function', `export ${k} should be a function`);
       } else {
-        assert.ok(typeof v === 'function', `export ${k} is not a function`);
+        assert.ok(typeof v === 'function', `export ${k} is not a function: ${k} is ${typeof v}`);
       }
     }
   });
 });
+
+
 
 
 

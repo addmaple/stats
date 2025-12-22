@@ -47,10 +47,10 @@ If you only need basic statistics:
 
 ```js
 // Instead of loading 76.74K (full module)
-import { init, mean, variance } from '@stats/core';
+import { init, mean, variance } from '@addmaple/stats';
 
 // Load only 20.83K (stats module)
-import { init, mean, variance } from '@stats/core/stats';
+import { init, mean, variance } from '@addmaple/stats/stats';
 ```
 
 **Savings: 55.91K (73% reduction)**

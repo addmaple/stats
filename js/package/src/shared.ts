@@ -11,6 +11,13 @@ export function f64View(ptr: number, len: number, memory: WebAssembly.Memory): F
 }
 
 /**
+ * Create a Float32Array view into WASM memory.
+ */
+export function f32View(ptr: number, len: number, memory: WebAssembly.Memory): Float32Array {
+  return new Float32Array(memory.buffer, ptr, len);
+}
+
+/**
  * Efficiently copy data to WASM memory.
  *
  * Performance note: `Float64Array` and plain `Array<number>` are fastest.
@@ -34,6 +41,26 @@ export function copyToWasmMemory(data: ArrayLike<number>, view: Float64Array): v
     } else {
       for (let i = 0; i < data.length; i++) {
         view[i] = data[i];
+      }
+    }
+  }
+}
+
+/**
+ * Efficiently copy data to WASM memory (f32).
+ */
+export function copyToWasmMemoryF32(data: ArrayLike<number>, view: Float32Array): void {
+  if (data instanceof Float32Array) {
+    view.set(data);
+  } else if (data instanceof Array) {
+    view.set(data as number[]);
+  } else {
+    const len = data.length;
+    try {
+      view.set(data as any);
+    } catch {
+      for (let i = 0; i < len; i++) {
+        view[i] = data[i] as number;
       }
     }
   }
@@ -92,43 +119,27 @@ export function runUnaryArrayOp(
 }
 
 /**
- * Load a WASM module with SIMD feature detection.
- * Throws if SIMD is not supported.
+ * Load a WASM module using wasm-bindgen-lite loaders.
  */
-export async function loadWasmModule(modulePath: string): Promise<any> {
-  const supportsSimd = await simd();
-  if (!supportsSimd) {
-    throw new Error(
-      'WebAssembly SIMD is not supported in this environment. ' +
-      'The @addmaple/stats library requires SIMD support. ' +
-      'Please use a modern browser or Node.js 18+ with SIMD enabled.'
-    );
-  }
+export async function loadWasmModule(moduleDir: string, inline: boolean = false): Promise<any> {
+  const isNode =
+    typeof process !== 'undefined' &&
+    typeof (process as any).versions?.node === 'string';
+
+  const entryPoint = isNode 
+    ? (inline ? 'node-inline.js' : 'node.js') 
+    : (inline ? 'browser-inline.js' : 'browser.js');
+    
+  const modulePath = `${moduleDir}/${entryPoint}`;
+  console.log(`Loading WASM module from: ${modulePath}`);
+
   // @ts-ignore - WASM module path resolved at runtime
   const mod = await import(modulePath);
-  // wasm-pack `--target web` (and some other targets) generate a default async
-  // initializer that must be called before exports are usable. Without this,
-  // the generated JS will keep an internal `wasm` reference as `undefined`,
-  // leading to runtime crashes like "Cannot read properties of undefined".
-  if (typeof (mod as any).default === 'function') {
-    const init = (mod as any).default as (input?: any) => Promise<any>;
-
-    // In browsers, the default init uses `fetch(new URL(..., import.meta.url))`.
-    // In Node, `fetch(file://...)` is not reliably supported, so we pass the
-    // raw wasm bytes instead.
-    const isNode =
-      typeof process !== 'undefined' &&
-      typeof (process as any).versions?.node === 'string';
-
-    if (isNode) {
-      const { readFile } = await import('node:fs/promises');
-      const wasmUrl = new URL(modulePath.replace(/\.js$/i, '_bg.wasm'), import.meta.url);
-      const wasmBytes = await readFile(wasmUrl);
-      await init({ module_or_path: wasmBytes });
-    } else {
-      await init();
-    }
+  
+  if (typeof mod.init === 'function') {
+    await mod.init();
   }
+  
   return mod;
 }
 
@@ -136,6 +147,19 @@ export async function loadWasmModule(modulePath: string): Promise<any> {
  * The consistent error message for uninitialized WASM modules.
  */
 export const WASM_NOT_INITIALIZED_ERROR = 'Wasm module not initialized. Call init() first.';
+
+/**
+ * Global WASM module instance, if using the full build.
+ */
+let globalWasm: any = null;
+
+export function setGlobalWasm(mod: any): void {
+  globalWasm = mod;
+}
+
+export function getGlobalWasm(): any | null {
+  return globalWasm;
+}
 
 /**
  * Create a requireWasm function for a module.

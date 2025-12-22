@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: mean-test.js
@@ -40,6 +40,7 @@ describe('mean - jstat compatibility', () => {
   it.skip('mean full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, median } from '@stats/core';
+import { init, median } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: median-test.js
@@ -40,6 +40,7 @@ describe('median - jstat compatibility', () => {
   it.skip('median full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

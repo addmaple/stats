@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, cumprod } from '@stats/core';
+import { init, cumprod } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: cumprod-test.js

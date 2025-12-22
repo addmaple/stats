@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, quartiles } from '@stats/core';
+import { init, quartiles } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: quartiles-test.js

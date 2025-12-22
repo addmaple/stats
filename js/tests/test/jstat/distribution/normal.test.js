@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, normal } from '@stats/core';
+import { init, normal } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: normal-test.js

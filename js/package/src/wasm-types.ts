@@ -9,6 +9,7 @@
 export interface ArrayResult {
   readonly ptr: number;
   readonly len: number;
+  readonly cap?: number;
 }
 
 // Common interface for HistogramWithEdges result
@@ -39,6 +40,62 @@ export interface RegressionCoeffsF32 {
 }
 
 // Full regression result with residuals
+export interface RegressionResult {
+  readonly slope: number;
+  readonly intercept: number;
+  readonly r_squared: number;
+  readonly residuals: Float64Array;
+}
+
+/**
+ * Full descriptive statistics snapshot for a numeric array.
+ */
+export interface DescriptiveStatsResult {
+  /** Number of observations (N) */
+  count: number;
+  /** Sum of all values */
+  sum: number;
+  /** Arithmetic mean */
+  mean: number;
+  /** Population variance */
+  variance: number;
+  /** Sample variance (Bessel's correction) */
+  sampleVariance: number;
+  /** Population standard deviation */
+  stdev: number;
+  /** Sample standard deviation */
+  sampleStdev: number;
+  /** Minimum value */
+  min: number;
+  /** Maximum value */
+  max: number;
+  /** Range (max - min) */
+  range: number;
+  /** Median (50th percentile) */
+  median: number;
+  /** First quartile (25th percentile) */
+  q1: number;
+  /** Second quartile (50th percentile, same as median) */
+  q2: number;
+  /** Third quartile (75th percentile) */
+  q3: number;
+  /** Interquartile range (Q3 - Q1) */
+  iqr: number;
+  /** Coefficient of variation (stdev / mean) */
+  coeffvar: number;
+  /** Mean absolute deviation from the mean */
+  meandev: number;
+  /** Median absolute deviation from the median */
+  meddev: number;
+  /** Skewness (third standardized moment) */
+  skewness: number;
+  /** Excess kurtosis (fourth standardized moment minus 3) */
+  kurtosis: number;
+  /** Standard error of the mean (sampleStdev / sqrt(N)) */
+  standardError: number;
+}
+
+// Full regression result with residuals (WASM internal)
 export interface WasmRegressionResult {
   readonly slope: number;
   readonly intercept: number;
@@ -55,15 +112,15 @@ export interface QuartilesResult {
 
 // ANOVA result
 export interface AnovaResult {
-  readonly f_score: number;
-  readonly df_between: number;
-  readonly df_within: number;
+  readonly fScore: number;
+  readonly dfBetween: number;
+  readonly dfWithin: number;
 }
 
 // Chi-square result
 export interface ChiSquareResult {
   readonly statistic: number;
-  readonly p_value: number;
+  readonly pValue: number;
   readonly df: number;
 }
 
@@ -83,8 +140,7 @@ export interface TukeyHsdResult {
   readonly num_groups: number;
   readonly df_within: number;
   readonly msw: number;
-  readonly num_comparisons: number;
-  get_comparison(index: number): TukeyPairResult | undefined;
+  readonly comparisons: TukeyPairResult[];
 }
 
 /**
@@ -111,10 +167,16 @@ export interface StatsWasmModule {
   geomean_f64(ptr: number, len: number): number;
   skewness_f64(ptr: number, len: number): number;
   kurtosis_f64(ptr: number, len: number): number;
+  meandev_f64(ptr: number, len: number): number;
+  meddev_f64(ptr: number, len: number): number;
+  pooledvariance_f64(d1p: number, d1l: number, d2p: number, d2l: number): number;
+  pooledstdev_f64(d1p: number, d1l: number, d2p: number, d2l: number): number;
+  stan_moment_f64(ptr: number, len: number, k: number): number;
   cumsum_f64(ptr: number, len: number): ArrayResult;
   cumprod_f64(ptr: number, len: number): ArrayResult;
   diff_f64(ptr: number, len: number): ArrayResult;
   rank_f64(ptr: number, len: number): ArrayResult;
+  deviation_f64(ptr: number, len: number): ArrayResult;
   histogram_f64(ptr: number, len: number, binCount: number): ArrayResult;
 }
 
@@ -248,6 +310,8 @@ export interface QuantilesWasmModule {
   percentile_inclusive_f64(ptr: number, len: number, k: number): number;
   percentile_exclusive_f64(ptr: number, len: number, k: number): number;
   percentile_of_score_f64(ptr: number, len: number, score: number, strict: boolean): number;
+  qscore_f64(ptr: number, len: number, score: number, strict: boolean): number;
+  qtest_f64(ptr: number, len: number, score: number, q_lower: number, q_upper: number): boolean;
   quartiles_f64(ptr: number, len: number): QuartilesResult;
   iqr_f64(ptr: number, len: number): number;
   quantiles_f64(dataPtr: number, dataLen: number, qsPtr: number, qsLen: number): ArrayResult;
@@ -274,6 +338,11 @@ export interface QuantilesWasmModule {
   ): number;
   histogram_f64(ptr: number, len: number, binCount: number): ArrayResult;
   histogram_edges_f64(dataPtr: number, dataLen: number, edgesPtr: number, edgesLen: number): ArrayResult;
+  histogram_fixed_width_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdgesResult;
+  histogram_equal_frequency_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdgesResult;
+  histogram_auto_with_edges_f64(ptr: number, len: number, rule: number, binsOverride: number): HistogramWithEdgesResult;
+  histogram_auto_with_edges_collapse_tails_f64(ptr: number, len: number, rule: number, binsOverride: number, k: number): HistogramWithEdgesResult;
+  histogram_custom_with_edges_f64(dataPtr: number, dataLen: number, edgesPtr: number, edgesLen: number, clampOutside: boolean): HistogramWithEdgesResult;
 }
 
 /**
@@ -300,8 +369,30 @@ export interface TestsWasmModule {
   ttest_f64(dataPtr: number, len: number, mu0: number): TestResult;
   ztest_f64(dataPtr: number, len: number, mu0: number, sigma: number): TestResult;
   regress_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_naive_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_simd_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_wasm_kernels_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
+  regress_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_naive_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_simd_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_wasm_kernels_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
+  regress_naive_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
+  regress_simd_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
+  regress_wasm_kernels_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
   normalci_f64(alpha: number, mean: number, se: number): Float64Array;
   tci_f64(alpha: number, mean: number, stdev: number, n: number): Float64Array;
+  anova_f_score_flat(dataPtr: number, lensPtr: number, numGroups: number): number;
+  anova_flat(dataPtr: number, lensPtr: number, numGroups: number, outPtr: number): AnovaResult;
+  chi_square_test(p1: number, p2: number, len: number, card1: number, card2: number, outPtr: number): ChiSquareResult;
+  anova_f_score_categorical(gp: number, pv: number, len: number): number;
+  anova_categorical(gp: number, vp: number, len: number, outPtr: number): AnovaResult;
+  tukey_hsd_categorical(gp: number, vp: number, len: number, outPtr: number): number;
+  alloc_f32(len: number): number;
+  free_f32(ptr: number, len: number): void;
+  alloc_i32(len: number): number;
+  free_i32(ptr: number, len: number): void;
+  regress_coeffs_f32(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffsF32;
+  regress_simd_residuals_inplace_f32(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffsF32;
 }
 
 /**
@@ -318,55 +409,11 @@ export interface FullWasmModule extends
     | 'alloc_f64'
     | 'free_f64'
     | 'histogram_f64'
-    | 'weighted_percentile_f64'
-    | 'weighted_quantiles_f64'
-    | 'weighted_median_f64'
   >,
   Omit<CorrelationWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64'>,
-  Omit<TestsWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64'> {
-  // Additional functions only in full module
+  Omit<TestsWasmModule, 'get_memory' | 'alloc_f64' | 'free_f64' | 'alloc_f32' | 'free_f32'> {
   alloc_f32(len: number): number;
   free_f32(ptr: number, len: number): void;
-  sum_f64_direct(ptr: number, len: number): number;
-  mean_f64_direct(ptr: number, len: number): number;
-  variance_f64_direct(ptr: number, len: number): number;
-  sample_variance_f64_direct(ptr: number, len: number): number;
-  stdev_f64_direct(ptr: number, len: number): number;
-  sample_stdev_f64_direct(ptr: number, len: number): number;
-  deviation_f64(ptr: number, len: number): ArrayResult;
-  meandev_f64(ptr: number, len: number): number;
-  meddev_f64(ptr: number, len: number): number;
-  pooledvariance_f64(data1Ptr: number, data1Len: number, data2Ptr: number, data2Len: number): number;
-  pooledstdev_f64(data1Ptr: number, data1Len: number, data2Ptr: number, data2Len: number): number;
-  stan_moment_f64(ptr: number, len: number, k: number): number;
-  qscore_f64(ptr: number, len: number, score: number, strict: boolean): number;
-  qtest_f64(ptr: number, len: number, score: number, qLower: number, qUpper: number): boolean;
-  histogram_fixed_width_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdgesResult;
-  histogram_equal_frequency_with_edges_f64(ptr: number, len: number, bins: number): HistogramWithEdgesResult;
-  histogram_auto_with_edges_f64(ptr: number, len: number, rule: number, binsOverride: number): HistogramWithEdgesResult;
-  histogram_auto_with_edges_collapse_tails_f64(ptr: number, len: number, rule: number, binsOverride: number, k: number): HistogramWithEdgesResult;
-  histogram_custom_with_edges_f64(dataPtr: number, dataLen: number, edgesPtr: number, edgesLen: number, clampOutside: boolean): HistogramWithEdgesResult;
-  anova_f_score_flat(dataPtr: number, lensPtr: number, numGroups: number): number;
-  anova_flat(dataPtr: number, lensPtr: number, numGroups: number): AnovaResult;
-  chi_square_test(cat1: string[], cat2: string[]): ChiSquareResult;
-  chi_square_test_with_cardinality(cat1: string[], cat2: string[], cardinality1: number | null, cardinality2: number | null): ChiSquareResult;
-  anova_f_score_categorical(groups: string[], values: number[]): number;
-  anova_categorical(groups: string[], values: Float64Array): AnovaResult;
-  // Tukey HSD
-  tukey_hsd_flat(dataPtr: number, lensPtr: number, numGroups: number): TukeyHsdResult;
-  tukey_hsd_categorical(groups: string[], values: number[]): TukeyHsdResult;
-  // Regression variants
-  regress_naive_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
-  regress_simd_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
-  regress_wasm_kernels_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): WasmRegressionResult;
-  regress_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
-  regress_naive_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
-  regress_simd_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
-  regress_wasm_kernels_coeffs_f64(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffs;
-  regress_naive_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
-  regress_simd_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
-  regress_wasm_kernels_residuals_inplace_f64(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffs;
-  // f32 regression (SIMD-focused)
-  regress_simd_coeffs_f32(xPtr: number, xLen: number, yPtr: number, yLen: number): RegressionCoeffsF32;
-  regress_simd_residuals_inplace_f32(xPtr: number, xLen: number, yPtr: number, yLen: number, residualsOutPtr: number): RegressionCoeffsF32;
+  alloc_i32(len: number): number;
+  free_i32(ptr: number, len: number): void;
 }

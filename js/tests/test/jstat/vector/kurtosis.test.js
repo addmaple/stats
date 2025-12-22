@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, kurtosis } from '@stats/core';
+import { init, kurtosis } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: kurtosis-test.js

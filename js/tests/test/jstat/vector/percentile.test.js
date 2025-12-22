@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, percentile } from '@stats/core';
+import { init, percentile } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: percentile-test.js

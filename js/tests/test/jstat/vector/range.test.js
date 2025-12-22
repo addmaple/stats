@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, range } from '@stats/core';
+import { init, range } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: range-test.js
@@ -36,6 +36,7 @@ describe('range - jstat compatibility', () => {
   it.skip('range matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

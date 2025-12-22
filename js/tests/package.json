@@ -14,11 +14,11 @@
     "coverage:v8:core": "node scripts/coverage-v8.js \"test/core/**/*.test.js\""
   },
   "dependencies": {
-    "@stats/core": "file:../package",
+    "@addmaple/stats": "file:../package",
     "jstat": "^1.9.5"
   },
   "peerDependencies": {
-    "@stats/core": "*"
+    "@addmaple/stats": "*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0"

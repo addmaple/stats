@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, geomean } from '@stats/core';
+import { init, geomean } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: geomean-test.js

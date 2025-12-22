@@ -12,24 +12,22 @@ A high-performance statistics library built with Rust and WebAssembly, designed 
 
 ### ✅ Implemented
 
-- Basic vector statistics:
-  - `sum` - Sum of array elements
-  - `mean` - Arithmetic mean
-  - `variance` - Population variance
-  - `sampleVariance` - Sample variance (Bessel's correction)
-  - `stdev` - Population standard deviation
-  - `sampleStdev` - Sample standard deviation
+- **Basic vector statistics**: `sum`, `mean`, `variance`, `stdev`, `min`, `max`, `median`, `mode`, etc.
+- **Distributions**: Normal, Gamma, Beta, Student's T, Chi-Squared, Poisson, Binomial, and more.
+- **Statistical Tests**: T-Test, Z-Test, ANOVA, Chi-Square, Tukey HSD.
+- **Correlation**: Covariance, Pearson Correlation, Spearman Rank Correlation.
+- **Regression**: Fast linear regression with SIMD support.
+- **Quantiles**: Percentiles, Quartiles, IQR, and advanced Histogram Binning.
+- **SIMD-optimized** implementations using `wide` crate.
+- **WASM-powered** with memory-efficient typed array views.
+- **Tree-shakeable** modular architecture.
 
-- SIMD-optimized implementations using `wide` crate
-- WASM bindings with memory-efficient typed array views
-- Benchmark suite comparing against jStat
+### 🚧 Future Work
 
-### 🚧 Coming Soon
-
-- Distributions (normal, t, chi-square, etc.)
-- Linear algebra operations
-- Statistical tests
-- SIMD builds with runtime detection
+- Matrix operations
+- Linear algebra routines
+- Native multi-dimensional array support (ndarray integration)
+- GPU-accelerated kernels via WebGPU
 
 ## Building
 
@@ -46,10 +44,12 @@ cargo bench
 
 ### WebAssembly
 
+The project uses `wasm-bindgen-lite` for high-performance, size-optimized bindings.
+
 ```bash
-# Build WASM package
-cd crates/stat-wasm
-wasm-pack build --target bundler --out-dir pkg
+# Build all WASM modules
+cd js/package
+npm run build:wasm
 ```
 
 ### JavaScript Package

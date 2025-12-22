@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, pareto } from '@stats/core';
+import { init, pareto } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: pareto-test.js

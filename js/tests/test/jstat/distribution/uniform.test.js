@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, uniform } from '@stats/core';
+import { init, uniform } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: uniform-test.js

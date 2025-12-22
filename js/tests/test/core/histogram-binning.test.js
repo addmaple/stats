@@ -1,6 +1,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { init, histogramBinning, BinningPresets } from '@stats/core';
+import { init, histogramBinning, BinningPresets } from '@addmaple/stats';
 
 describe('histogramBinning - advanced binning strategies', () => {
   before(async () => {
@@ -501,6 +501,7 @@ describe('histogramBinning - advanced binning strategies', () => {
     }, /custom mode requires edges array/);
   });
 });
+
 
 
 

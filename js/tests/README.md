@@ -1,4 +1,4 @@
-# @stats/core - jStat Compatibility Test Suite
+# @addmaple/stats - jStat Compatibility Test Suite
 
 This directory contains **comprehensive tests** comparing our implementation against **ALL** jStat test cases. The tests ensure that our library produces the same results as jStat for all implemented functions, catching any regressions.
 
@@ -71,7 +71,7 @@ Each test file:
 ```javascript
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 import jStat from 'jstat';
 
 describe('mean - jstat compatibility', () => {
@@ -102,28 +102,13 @@ describe('mean - jstat compatibility', () => {
 - `histogram`, `quartiles`, `percentileOfScore`
 
 **Distributions:**
-- All distribution tests are converted (may need manual API conversion for distribution handle pattern)
+- All distribution tests are converted and updated to use the new modular API.
 
 **Statistical Tests:**
-- `ztest`, `qtest`, `differenceOfProportions`
+- `ztest`, `qtest`, `ttest`, `anovaTest`, `chiSquareTest`
 
 **Models:**
-- `R2`, `simple-regression`, `thousand-size`
-
-### ⚠️ Tests That Need Manual Review
-
-Some tests are marked for manual conversion:
-- **Matrix operations** - Our API doesn't support matrices yet (tests are skipped with notes)
-- **Distribution tests** - May need API conversion (jStat uses `jStat.normal.pdf(x, mean, sd)`, we use `normal({mean, sd}).pdf(x)`)
-- **Callback tests** - jStat supports callbacks, we're synchronous (callback tests are skipped)
-
-## Adding New Tests
-
-When jStat adds new tests or you want to add manual test cases:
-
-1. **For automatic conversion**: Run `npm run convert-tests` - it will regenerate all tests
-2. **For manual tests**: Create a new test file following the pattern above
-3. **For distribution tests**: You may need to convert the API pattern manually
+- `regress`, `RegressionWorkspace`, `ANOVA`
 
 ## Tolerance Levels
 
@@ -132,28 +117,18 @@ Different functions use different tolerance levels:
 - **Exact equality**: `assert.equal()` - For integer results (sum, count)
 - **High precision**: `1e-10` - For basic statistics (mean, variance)
 - **Medium precision**: `1e-5` - For derived statistics (skewness, kurtosis)
-- **Custom tolerance**: Uses jStat's original `assert.epsilon()` tolerance values
+- **Custom tolerance**: Uses jStat's original `epsilon` tolerance values
 
 ## Notes
 
-- Matrix operations are not yet implemented, so those tests are skipped with a note
-- Some jStat tests use callback patterns which we don't support (we're synchronous)
-- jStat's instance methods (`jStat(data).mean()`) are tested against our direct function calls
-- Distribution tests may need manual API conversion due to different API patterns
+- Matrix operations are not yet implemented, so those tests are skipped with a note.
+- jStat's instance methods (`jStat(data).mean()`) are tested against our direct function calls.
+- Distribution tests have been updated to use our object-oriented API pattern.
 
 ## Catching Regressions
 
 These tests are designed to catch regressions by:
-1. **Running on every change** - Add to CI/CD pipeline
+1. **Running on every change** - Integrated into GitHub Actions CI
 2. **Comparing exact values** - Not just "close enough", but exact matches where possible
 3. **Covering edge cases** - Empty arrays, single values, NaN handling
 4. **Using jStat as reference** - jStat is a well-tested, widely-used library
-
-## Maintenance
-
-To keep tests up-to-date with jStat:
-
-1. Update jStat: `cd js/bench && npm update jstat`
-2. Re-convert tests: `cd js/tests && npm run convert-tests`
-3. Review changes: Check git diff for any new test cases
-4. Run tests: `npm test` to ensure everything still passes

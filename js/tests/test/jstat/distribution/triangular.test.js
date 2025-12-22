@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, triangular } from '@stats/core';
+import { init, triangular } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: triangular-test.js

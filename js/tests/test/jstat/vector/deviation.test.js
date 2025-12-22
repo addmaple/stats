@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, deviation } from '@stats/core';
+import { init, deviation } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: deviation-test.js

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, studentT } from '@stats/core';
+import { init, studentT } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: studentT-test.js

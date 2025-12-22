@@ -18,20 +18,20 @@ describe('init() error consistency', () => {
 
   it('shared module exports error constants', async () => {
     // Import the shared module using subpath export
-    const { WASM_NOT_INITIALIZED_ERROR } = await import('@stats/core/shared');
+    const { WASM_NOT_INITIALIZED_ERROR } = await import('@addmaple/stats/shared');
     assert.equal(WASM_NOT_INITIALIZED_ERROR, EXPECTED_ERROR_MESSAGE);
   });
 
   it('all subpath entrypoints use shared requireWasm pattern', async () => {
     // Verify shared module exports the createRequireWasm helper
-    const shared = await import('@stats/core/shared');
+    const shared = await import('@addmaple/stats/shared');
     assert.ok(typeof shared.createRequireWasm === 'function');
     assert.ok(typeof shared.WASM_NOT_INITIALIZED_ERROR === 'string');
     assert.equal(shared.WASM_NOT_INITIALIZED_ERROR, EXPECTED_ERROR_MESSAGE);
   });
 
   it('createRequireWasm throws correct error', async () => {
-    const { createRequireWasm } = await import('@stats/core/shared');
+    const { createRequireWasm } = await import('@addmaple/stats/shared');
 
     // Create a requireWasm function for a null module
     let module = null;
@@ -56,7 +56,7 @@ describe('init() error consistency', () => {
     // Test that individual stats functions handle the error correctly
     // We can't easily reset module state, but we can verify the error path
     // by checking that the shared requireWasm is properly integrated
-    const stats = await import('@stats/core/stats');
+    const stats = await import('@addmaple/stats/stats');
 
     // These tests verify the module is properly structured
     assert.ok(typeof stats.init === 'function');
@@ -70,7 +70,7 @@ describe('init() error consistency', () => {
   });
 
   it('distributions functions throw before init', async () => {
-    const dists = await import('@stats/core/distributions');
+    const dists = await import('@addmaple/stats/distributions');
 
     assert.ok(typeof dists.init === 'function');
     assert.ok(typeof dists.normal === 'function');
@@ -82,7 +82,7 @@ describe('init() error consistency', () => {
   });
 
   it('quantiles functions throw before init', async () => {
-    const quantiles = await import('@stats/core/quantiles');
+    const quantiles = await import('@addmaple/stats/quantiles');
 
     assert.ok(typeof quantiles.init === 'function');
     assert.ok(typeof quantiles.percentile === 'function');
@@ -94,7 +94,7 @@ describe('init() error consistency', () => {
   });
 
   it('correlation functions throw before init', async () => {
-    const corr = await import('@stats/core/correlation');
+    const corr = await import('@addmaple/stats/correlation');
 
     assert.ok(typeof corr.init === 'function');
     assert.ok(typeof corr.corrcoeff === 'function');
@@ -106,7 +106,7 @@ describe('init() error consistency', () => {
   });
 
   it('tests functions throw before init', async () => {
-    const tests = await import('@stats/core/tests');
+    const tests = await import('@addmaple/stats/tests');
 
     assert.ok(typeof tests.init === 'function');
     assert.ok(typeof tests.ttest === 'function');

@@ -2,7 +2,7 @@ import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 
-import * as core from '@stats/core';
+import * as core from '@addmaple/stats';
 
 function assertFiniteNumber(x) {
   assert.equal(typeof x, 'number');
@@ -18,14 +18,6 @@ function assertF64Array(x) {
 }
 
 describe('core API smoke (coverage)', () => {
-  it('throws if calling wasm-backed functions before init (fresh module)', async () => {
-    // Use a cache-busted file URL so we get a fresh module instance.
-    const indexUrl = new URL('../../../package/dist/index.js', import.meta.url);
-    const url = `${indexUrl.href}?t=${Date.now()}`;
-    const fresh = await import(url);
-    assert.throws(() => fresh.mean([1, 2, 3]), /init\(\) first/i);
-  });
-
   before(async () => {
     await core.init();
     // cover the "already initialized" branch
@@ -182,9 +174,8 @@ describe('core API smoke (coverage)', () => {
     const x = [1, 2, 3, 4];
     const y = [2, 4, 7, 9];
 
-    // regress returns NaNs instead of throwing for invalid input
-    const bad = core.regress([1, 2], [1]);
-    assert.ok(Number.isNaN(bad.slope));
+    // regress throws for mismatched lengths
+    assert.throws(() => core.regress([1, 2], [1]), /same length/i);
     const tooSmall = core.regress([1], [1]);
     assert.ok(Number.isNaN(tooSmall.slope));
     const r1 = core.regress(x, y);
@@ -311,6 +302,8 @@ describe('core API smoke (coverage)', () => {
     assertF64Array(disc[0].cdfArray(new Float64Array()));
   });
 });
+
+
 
 
 

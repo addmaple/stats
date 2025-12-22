@@ -15,7 +15,7 @@ import {
   median,
   quartiles,
   iqr,
-} from '@stats/core';
+} from '@addmaple/stats';
 
 describe('descriptiveStats helper', () => {
   it('should initialize wasm module', async () => {

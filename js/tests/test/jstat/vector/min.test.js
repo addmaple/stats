@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, min } from '@stats/core';
+import { init, min } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: min-test.js
@@ -40,6 +40,7 @@ describe('min - jstat compatibility', () => {
   it.skip('min full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
 
 
 

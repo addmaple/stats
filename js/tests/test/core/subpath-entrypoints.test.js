@@ -1,11 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import * as stats from '@stats/core/stats';
-import * as quantiles from '@stats/core/quantiles';
-import * as corr from '@stats/core/correlation';
-import * as dists from '@stats/core/distributions';
-import * as tests from '@stats/core/tests';
+import * as stats from '@addmaple/stats/stats';
+import * as quantiles from '@addmaple/stats/quantiles';
+import * as corr from '@addmaple/stats/correlation';
+import * as dists from '@addmaple/stats/distributions';
+import * as tests from '@addmaple/stats/tests';
 
 describe('subpath entrypoints (coverage + sanity)', () => {
   it('stats entrypoint works', async () => {
@@ -165,6 +165,7 @@ describe('subpath entrypoints (coverage + sanity)', () => {
     assert.ok(Array.isArray(tests.tci(0.05, 10, 2, 10)));
   });
 });
+
 
 
 

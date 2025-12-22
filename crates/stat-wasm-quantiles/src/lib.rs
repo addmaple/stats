@@ -1,206 +1,100 @@
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
+#![allow(clippy::missing_safety_doc, clippy::needless_range_loop)]
+#![allow(clippy::not_unsafe_ptr_arg_deref, dead_code)]
 
-use wasm_bindgen::prelude::*;
+use std::alloc::{alloc, dealloc, Layout};
+use std::mem;
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct ArrayResult {
-    ptr: usize,
-    len: usize,
+#[no_mangle]
+pub unsafe extern "C" fn alloc_bytes(len: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    alloc(layout)
 }
 
-#[wasm_bindgen]
-impl ArrayResult {
-    #[wasm_bindgen(getter)]
-    pub fn ptr(&self) -> usize {
-        self.ptr
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
+#[no_mangle]
+pub unsafe extern "C" fn free_bytes(ptr: *mut u8, len: usize) {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    dealloc(ptr, layout);
 }
 
-fn vec_to_array_result(data: Vec<f64>) -> ArrayResult {
-    // IMPORTANT: JS frees these buffers via `free_f64(ptr, len)` which assumes
-    // the allocation is exactly `len` elements. A `Vec` may have `capacity > len`,
-    // so we first convert it into a boxed slice (always sized to `len`).
-    let len = data.len();
-    let boxed: Box<[f64]> = data.into_boxed_slice();
-    let ptr = Box::into_raw(boxed) as *mut f64 as usize;
-    ArrayResult { ptr, len }
-}
-
-#[wasm_bindgen]
-pub fn get_memory() -> JsValue {
-    wasm_bindgen::memory()
-}
-
-#[wasm_bindgen]
-pub fn alloc_f64(len: usize) -> *mut f64 {
-    let mut vec = Vec::<f64>::with_capacity(len);
-    let ptr = vec.as_mut_ptr();
-    std::mem::forget(vec);
-    ptr
-}
-
-#[wasm_bindgen]
-pub fn free_f64(ptr: *mut f64, len: usize) {
-    unsafe {
-        let _ = Vec::from_raw_parts(ptr, len, len);
-    }
-}
+#[no_mangle] pub unsafe extern "C" fn alloc_f64(len: usize) -> *mut f64 { alloc_bytes(len * 8) as *mut f64 }
+#[no_mangle] pub unsafe extern "C" fn free_f64(ptr: *mut f64, len: usize) { free_bytes(ptr as *mut u8, len * 8); }
 
 fn slice_from<'a>(ptr: *const f64, len: usize) -> &'a [f64] {
     unsafe { std::slice::from_raw_parts(ptr, len) }
 }
 
-// Quantile functions
-#[wasm_bindgen]
-pub fn percentile_f64(ptr: *const f64, len: usize, k: f64, exclusive: bool) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::percentile(data, k, exclusive)
+fn slice_from_mut<'a>(ptr: *mut f64, len: usize) -> &'a mut [f64] {
+    unsafe { std::slice::from_raw_parts_mut(ptr, len) }
 }
 
-#[wasm_bindgen]
-pub fn percentile_inclusive_f64(ptr: *const f64, len: usize, k: f64) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::percentile_inclusive(data, k)
+#[no_mangle] pub unsafe extern "C" fn percentile_f64(ptr: *const f64, len: usize, k: f64, ex: bool) -> f64 { stat_core::percentile(slice_from(ptr, len), k, ex) }
+#[no_mangle] pub unsafe extern "C" fn percentile_inclusive_f64(ptr: *const f64, len: usize, k: f64) -> f64 { stat_core::percentile_inclusive(slice_from(ptr, len), k) }
+#[no_mangle] pub unsafe extern "C" fn percentile_exclusive_f64(ptr: *const f64, len: usize, k: f64) -> f64 { stat_core::percentile_exclusive(slice_from(ptr, len), k) }
+#[no_mangle] pub unsafe extern "C" fn percentile_of_score_f64(ptr: *const f64, len: usize, s: f64, st: bool) -> f64 { stat_core::percentile_of_score(slice_from(ptr, len), s, st) }
+
+#[no_mangle] pub unsafe extern "C" fn iqr_f64(ptr: *const f64, len: usize) -> f64 { stat_core::iqr(slice_from(ptr, len)) }
+
+#[no_mangle] pub unsafe extern "C" fn quartiles_f64(ptr: *const f64, len: usize, out_ptr: *mut f64) -> isize { let q = stat_core::quartiles(slice_from(ptr, len)); let out = slice_from_mut(out_ptr, 3); out[0] = q[0]; out[1] = q[1]; out[2] = q[2]; 3 }
+#[no_mangle] pub unsafe extern "C" fn quantiles_f64(dp: *const f64, dl: usize, qsp: *const f64, qsl: usize, out_ptr: *mut f64) -> isize { let result = stat_core::quantiles(slice_from(dp, dl), slice_from(qsp, qsl)); slice_from_mut(out_ptr, qsl).copy_from_slice(&result); qsl as isize }
+
+#[no_mangle] pub unsafe extern "C" fn weighted_percentile_f64(dp: *const f64, dl: usize, wp: *const f64, wl: usize, p: f64) -> f64 {
+    stat_core::weighted_percentile(slice_from(dp, dl), slice_from(wp, wl), p)
 }
 
-#[wasm_bindgen]
-pub fn percentile_exclusive_f64(ptr: *const f64, len: usize, k: f64) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::percentile_exclusive(data, k)
+#[no_mangle] pub unsafe extern "C" fn weighted_quantiles_f64(dp: *const f64, dl: usize, wp: *const f64, wl: usize, qsp: *const f64, qsl: usize, out_ptr: *mut f64) -> isize {
+    let res = stat_core::weighted_quantiles(slice_from(dp, dl), slice_from(wp, wl), slice_from(qsp, qsl));
+    slice_from_mut(out_ptr, qsl).copy_from_slice(&res);
+    qsl as isize
 }
 
-#[wasm_bindgen]
-pub fn percentile_of_score_f64(ptr: *const f64, len: usize, score: f64, strict: bool) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::percentile_of_score(data, score, strict)
+#[no_mangle] pub unsafe extern "C" fn weighted_median_f64(dp: *const f64, dl: usize, wp: *const f64, wl: usize) -> f64 {
+    stat_core::weighted_median(slice_from(dp, dl), slice_from(wp, wl))
 }
 
-/// Quartiles result struct for JS
-#[wasm_bindgen]
-pub struct QuartilesResult {
-    q1: f64,
-    q2: f64,
-    q3: f64,
+#[no_mangle] pub unsafe extern "C" fn qscore_f64(ptr: *const f64, len: usize, s: f64, st: bool) -> f64 { stat_core::qscore(slice_from(ptr, len), s, st) }
+#[no_mangle] pub unsafe extern "C" fn qtest_f64(ptr: *const f64, len: usize, s: f64, ql: f64, qu: f64) -> bool { stat_core::qtest(slice_from(ptr, len), s, ql, qu) }
+
+#[no_mangle] pub unsafe extern "C" fn histogram_f64(ptr: *const f64, len: usize, bc: usize, out_ptr: *mut f64) -> isize { let bins = stat_core::histogram(slice_from(ptr, len), bc); let out = slice_from_mut(out_ptr, bc); for i in 0..bc { out[i] = bins[i] as f64; } bc as isize }
+#[no_mangle] pub unsafe extern "C" fn histogram_edges_f64(dp: *const f64, dl: usize, ep: *const f64, el: usize, out_ptr: *mut f64) -> isize { let bins = stat_core::histogram_edges(slice_from(dp, dl), slice_from(ep, el)); let bc = bins.len(); let out = slice_from_mut(out_ptr, bc); for i in 0..bc { out[i] = bins[i] as f64; } bc as isize }
+
+#[no_mangle] pub unsafe extern "C" fn histogram_fixed_width_with_edges_f64(ptr: *const f64, len: usize, bins: usize, e_out: *mut f64, c_out: *mut f64) -> isize {
+    let res = stat_core::histogram_fixed_width_with_edges(slice_from(ptr, len), bins);
+    slice_from_mut(e_out, res.edges.len()).copy_from_slice(&res.edges);
+    let cout = slice_from_mut(c_out, res.counts.len());
+    for i in 0..res.counts.len() { cout[i] = res.counts[i] as f64; }
+    res.counts.len() as isize
 }
 
-#[wasm_bindgen]
-impl QuartilesResult {
-    #[wasm_bindgen(getter)]
-    pub fn q1(&self) -> f64 {
-        self.q1
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn q2(&self) -> f64 {
-        self.q2
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn q3(&self) -> f64 {
-        self.q3
-    }
+#[no_mangle] pub unsafe extern "C" fn histogram_equal_frequency_with_edges_f64(ptr: *const f64, len: usize, bins: usize, e_out: *mut f64, c_out: *mut f64) -> isize {
+    let res = stat_core::histogram_equal_frequency_with_edges(slice_from(ptr, len), bins);
+    slice_from_mut(e_out, res.edges.len()).copy_from_slice(&res.edges);
+    let cout = slice_from_mut(c_out, res.counts.len());
+    for i in 0..res.counts.len() { cout[i] = res.counts[i] as f64; }
+    res.counts.len() as isize
 }
 
-#[wasm_bindgen]
-pub fn quartiles_f64(ptr: *const f64, len: usize) -> QuartilesResult {
-    let data = slice_from(ptr, len);
-    let q = stat_core::quartiles(data);
-    QuartilesResult {
-        q1: q[0],
-        q2: q[1],
-        q3: q[2],
-    }
+#[no_mangle] pub unsafe extern "C" fn histogram_auto_with_edges_f64(ptr: *const f64, len: usize, rule: usize, bo: usize, e_out: *mut f64, c_out: *mut f64) -> isize {
+    let r = match rule { 0 => stat_core::BinningRule::FreedmanDiaconis, 1 => stat_core::BinningRule::Scott, 2 => stat_core::BinningRule::SqrtN, _ => stat_core::BinningRule::FreedmanDiaconis };
+    let res = stat_core::histogram_auto_with_edges(slice_from(ptr, len), r, if bo == 0 { None } else { Some(bo) });
+    slice_from_mut(e_out, res.edges.len()).copy_from_slice(&res.edges);
+    let cout = slice_from_mut(c_out, res.counts.len());
+    for i in 0..res.counts.len() { cout[i] = res.counts[i] as f64; }
+    res.counts.len() as isize
 }
 
-#[wasm_bindgen]
-pub fn iqr_f64(ptr: *const f64, len: usize) -> f64 {
-    let data = slice_from(ptr, len);
-    stat_core::iqr(data)
+#[no_mangle] pub unsafe extern "C" fn histogram_auto_with_edges_collapse_tails_f64(ptr: *const f64, len: usize, rule: usize, bo: usize, k: f64, e_out: *mut f64, c_out: *mut f64) -> isize {
+    let r = match rule { 0 => stat_core::BinningRule::FreedmanDiaconis, 1 => stat_core::BinningRule::Scott, 2 => stat_core::BinningRule::SqrtN, _ => stat_core::BinningRule::FreedmanDiaconis };
+    let res = stat_core::histogram_auto_with_edges_collapse_tails(slice_from(ptr, len), r, if bo == 0 { None } else { Some(bo) }, k);
+    slice_from_mut(e_out, res.edges.len()).copy_from_slice(&res.edges);
+    let cout = slice_from_mut(c_out, res.counts.len());
+    for i in 0..res.counts.len() { cout[i] = res.counts[i] as f64; }
+    res.counts.len() as isize
 }
 
-#[wasm_bindgen]
-pub fn quantiles_f64(
-    data_ptr: *const f64,
-    data_len: usize,
-    qs_ptr: *const f64,
-    qs_len: usize,
-) -> ArrayResult {
-    let data = slice_from(data_ptr, data_len);
-    let qs = slice_from(qs_ptr, qs_len);
-    vec_to_array_result(stat_core::quantiles(data, qs))
-}
-
-// Weighted quantile functions
-#[wasm_bindgen]
-pub fn weighted_percentile_f64(
-    data_ptr: *const f64,
-    data_len: usize,
-    weights_ptr: *const f64,
-    weights_len: usize,
-    p: f64,
-) -> f64 {
-    let data = slice_from(data_ptr, data_len);
-    let weights = slice_from(weights_ptr, weights_len);
-    stat_core::weighted_percentile(data, weights, p)
-}
-
-#[wasm_bindgen]
-pub fn weighted_quantiles_f64(
-    data_ptr: *const f64,
-    data_len: usize,
-    weights_ptr: *const f64,
-    weights_len: usize,
-    qs_ptr: *const f64,
-    qs_len: usize,
-) -> ArrayResult {
-    let data = slice_from(data_ptr, data_len);
-    let weights = slice_from(weights_ptr, weights_len);
-    let qs = slice_from(qs_ptr, qs_len);
-    vec_to_array_result(stat_core::weighted_quantiles(data, weights, qs))
-}
-
-#[wasm_bindgen]
-pub fn weighted_median_f64(
-    data_ptr: *const f64,
-    data_len: usize,
-    weights_ptr: *const f64,
-    weights_len: usize,
-) -> f64 {
-    let data = slice_from(data_ptr, data_len);
-    let weights = slice_from(weights_ptr, weights_len);
-    stat_core::weighted_median(data, weights)
-}
-
-// Histogram functions
-#[wasm_bindgen]
-pub fn histogram_f64(ptr: *const f64, len: usize, bin_count: usize) -> ArrayResult {
-    let data = slice_from(ptr, len);
-    let bins = stat_core::histogram(data, bin_count);
-    let bins_f64: Vec<f64> = bins.iter().map(|&x| x as f64).collect();
-    vec_to_array_result(bins_f64)
-}
-
-#[wasm_bindgen]
-pub fn histogram_edges_f64(
-    data_ptr: *const f64,
-    data_len: usize,
-    edges_ptr: *const f64,
-    edges_len: usize,
-) -> ArrayResult {
-    let data = slice_from(data_ptr, data_len);
-    let edges = slice_from(edges_ptr, edges_len);
-    let bins = stat_core::histogram_edges(data, edges);
-    let bins_f64: Vec<f64> = bins.into_iter().map(|x| x as f64).collect();
-    vec_to_array_result(bins_f64)
+#[no_mangle] pub unsafe extern "C" fn histogram_custom_with_edges_f64(dp: *const f64, dl: usize, ep: *const f64, el: usize, co: bool, e_out: *mut f64, c_out: *mut f64) -> isize {
+    let res = stat_core::histogram_custom_with_edges(slice_from(dp, dl), slice_from(ep, el), co);
+    slice_from_mut(e_out, res.edges.len()).copy_from_slice(&res.edges);
+    let cout = slice_from_mut(c_out, res.counts.len());
+    for i in 0..res.counts.len() { cout[i] = res.counts[i] as f64; }
+    res.counts.len() as isize
 }

@@ -25,7 +25,7 @@ describe('branchy edge cases (coverage)', () => {
   });
 
   it('quantiles module: all empty/degenerate branches', async () => {
-    const q = await import('@stats/core/quantiles');
+    const q = await import('@addmaple/stats/quantiles');
     await q.init();
 
     assert.ok(Number.isNaN(q.percentile([], 0.5)));
@@ -56,7 +56,7 @@ describe('branchy edge cases (coverage)', () => {
   });
 
   it('correlation module: mismatch/empty branches', async () => {
-    const c = await import('@stats/core/correlation');
+    const c = await import('@addmaple/stats/correlation');
     await c.init();
     assert.ok(Number.isNaN(c.corrcoeff([1, 2], [1])));
     assert.ok(Number.isNaN(c.covariance([], [])));
@@ -64,7 +64,7 @@ describe('branchy edge cases (coverage)', () => {
   });
 
   it('tests module: mismatch/empty branches', async () => {
-    const t = await import('@stats/core/tests');
+    const t = await import('@addmaple/stats/tests');
     await t.init();
 
     const empty = t.ttest([], 0);
@@ -77,6 +77,7 @@ describe('branchy edge cases (coverage)', () => {
     assert.ok(r0.residuals instanceof Float64Array);
   });
 });
+
 
 
 

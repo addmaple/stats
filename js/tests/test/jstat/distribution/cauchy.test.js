@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, cauchy } from '@stats/core';
+import { init, cauchy } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: cauchy-test.js

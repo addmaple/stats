@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init } from '@stats/core';
+import { init } from '@addmaple/stats';
 
 // Note: Our qtest API differs from jStat's Tukey HSD qtest
 // jStat: qtest(qscore, n, k) or qtest(mean1, mean2, n1, n2, sd, n, k)
@@ -30,7 +30,7 @@ describe('qtest - jstat compatibility', () => {
 
   it('works', async () => {
     await init();
-    // jStat's tukeyhsd is not implemented in @stats/core
+    // jStat's tukeyhsd is not implemented in @addmaple/stats
     assert.ok(true, 'tukeyhsd not yet implemented');
   });
 

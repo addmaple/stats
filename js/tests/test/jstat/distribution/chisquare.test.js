@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, chiSquared } from '@stats/core';
+import { init, chiSquared } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: chiSquared-test.js

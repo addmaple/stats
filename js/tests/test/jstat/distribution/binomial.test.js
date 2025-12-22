@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, binomial } from '@stats/core';
+import { init, binomial } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: binomial-test.js
