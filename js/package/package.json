@@ -1,6 +1,6 @@
 {
   "name": "@addmaple/stats",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "High-performance statistics library built with Rust and WebAssembly",
   "type": "module",
   "main": "./dist/index.js",
