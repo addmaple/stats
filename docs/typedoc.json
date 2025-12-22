@@ -3,7 +3,7 @@
   "entryPoints": ["../js/package/src/index.ts"],
   "tsconfig": "./tsconfig.json",
   "out": "./api",
-  "name": "@stats/core API Reference",
+  "name": "@addmaple/stats API Reference",
   "readme": "none",
   "includeVersion": true,
   "excludePrivate": true,
