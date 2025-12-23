@@ -13,7 +13,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/' },
       { text: 'API Reference', link: '/api/' },
       { text: 'Examples', link: '/examples/' },
-      { text: 'GitHub', link: 'https://github.com/yourusername/stats' }
+      { text: 'GitHub', link: 'https://github.com/addmaple/stats' }
     ],
     
     sidebar: {
@@ -219,7 +219,7 @@ export default defineConfig({
     },
     
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yourusername/stats' }
+      { icon: 'github', link: 'https://github.com/addmaple/stats' }
     ],
     
     search: {
