@@ -1,14 +1,5 @@
 {
-  "buildCommand": "cd js/package && npm install && cd ../../docs && npm install && npm run build",
+  "buildCommand": "cd docs && npm install && npm run build",
   "outputDirectory": "docs/dist",
-  "installCommand": "cd js/package && npm install && cd ../../docs && npm install"
+  "installCommand": "cd docs && npm install"
 }
-
-
-
-
-
-
-
-
-

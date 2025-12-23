@@ -8,7 +8,7 @@
     "prebuild": "bash scripts/build-local-package.sh",
     "build": "npm run docs:api && npm run docs:functions && vitepress build .",
     "preview": "vitepress preview .",
-    "docs:api": "typedoc --options typedoc.json",
+    "docs:api": "npx typedoc --options typedoc.json",
     "docs:functions": "node scripts/generate-function-pages.js",
     "docs:build": "npm run docs:api && npm run docs:functions && vitepress build docs",
     "docs:serve": "vitepress preview docs",
@@ -16,6 +16,14 @@
   },
   "dependencies": {
     "@addmaple/stats": "^0.2.4",
-    "wasm-feature-detect": "^1.5.0"
+    "typedoc": "^0.25.0",
+    "typedoc-plugin-markdown": "^3.17.0",
+    "wasm-feature-detect": "^1.5.0",
+    "vitepress": "^1.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^25.0.3",
+    "vite-plugin-wasm": "^3.5.0"
   }
 }
