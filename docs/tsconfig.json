@@ -12,7 +12,11 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "wasm-feature-detect": ["./node_modules/wasm-feature-detect"]
+      "wasm-feature-detect": [
+        "node_modules/wasm-feature-detect",
+        "../js/package/node_modules/wasm-feature-detect",
+        "../node_modules/wasm-feature-detect"
+      ]
     }
   },
   "include": [
