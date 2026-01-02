@@ -35,6 +35,12 @@ if [ $? -eq 0 ]; then
     echo "✅ Copied WASM packages to $PUBLIC_DIR/pkg"
   else
     echo "⚠️  No pkg directory found after build"
+    # Fallback: try to copy from node_modules if available
+    if [ -d "node_modules/@addmaple/stats/pkg" ]; then
+      echo "📦 Copying WASM packages from node_modules..."
+      cp -r node_modules/@addmaple/stats/pkg "$PUBLIC_DIR/"
+      echo "✅ Copied WASM packages from node_modules to $PUBLIC_DIR/pkg"
+    fi
   fi
 else
   echo "⚠️  Local build failed - docs will use npm package"
