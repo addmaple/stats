@@ -22,6 +22,20 @@ npm install && npm run build
 
 if [ $? -eq 0 ]; then
   echo "✅ Local package built successfully"
+  
+  # Copy WASM package files to docs public directory for VitePress to serve
+  echo "📦 Copying WASM files to docs public directory..."
+  DOCS_DIR="../../docs"
+  PUBLIC_DIR="$DOCS_DIR/public/assets"
+  mkdir -p "$PUBLIC_DIR"
+  
+  # Copy all pkg directories to public/assets/pkg
+  if [ -d "pkg" ]; then
+    cp -r pkg "$PUBLIC_DIR/"
+    echo "✅ Copied WASM packages to $PUBLIC_DIR/pkg"
+  else
+    echo "⚠️  No pkg directory found after build"
+  fi
 else
   echo "⚠️  Local build failed - docs will use npm package"
 fi
