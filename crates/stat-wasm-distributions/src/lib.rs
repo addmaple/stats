@@ -1,5 +1,4 @@
 #![allow(clippy::missing_safety_doc, clippy::needless_range_loop)]
-#![allow(clippy::missing_safety_doc)]
 #![allow(clippy::not_unsafe_ptr_arg_deref, dead_code)]
 
 use std::alloc::{alloc, dealloc, Layout};
