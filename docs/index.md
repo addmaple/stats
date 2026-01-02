@@ -30,7 +30,7 @@ features:
 
 ## About AddMaple
 
-**AddMaple** is a modern data analysis platform that enables fast data exploration with automatic statistical testing and AI powered text analysis.
+**[AddMaple](https://addmaple.com)** is a modern data analysis platform that enables fast data exploration with automatic statistical testing and AI powered text analysis.
 
 `@addmaple/stats` is the high-performance statistics library that powers AddMaple, providing the statistical foundation for fast and accurate data analysis.
 
