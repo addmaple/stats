@@ -82,7 +82,7 @@
     "@types/node": "^20.0.0",
     "esbuild": "^0.27.0",
     "typescript": "^5.0.0",
-    "wasm-bindgen-lite": "file:../../../wasm-bindgen-lite"
+    "wasm-bindgen-lite": "^0.3.2"
   },
   "dependencies": {
     "wasm-feature-detect": "^1.5.0"
