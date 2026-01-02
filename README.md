@@ -7,7 +7,7 @@ A high-performance statistics library built with Rust and WebAssembly, designed 
 ## Architecture
 
 - **Pure Rust core** (`stat-core`) - No WebAssembly-specific code
-- **Thin WASM boundary** (`stat-wasm`) - Minimal wasm-bindgen glue
+- **Thin WASM boundary** (`stat-wasm-*`) - Minimal wasm-bindgen-lite bindings
 - **Ergonomic JS/TS API** (`js/package`) - Modern, tree-shakeable API
 
 ## Current Status
@@ -70,6 +70,12 @@ npm install
 npm run bench
 ```
 
+## Installation
+
+```bash
+npm install @addmaple/stats
+```
+
 ## Usage
 
 ```javascript
@@ -105,16 +111,29 @@ npm install
 npm run dev
 ```
 
+## Installation
+
+```bash
+npm install @addmaple/stats
+```
+
 ## Project Structure
 
 ```
 .
 ├─ crates/
-│  ├─ stat-core       # Pure Rust statistics library
-│  └─ stat-wasm       # WASM bindings
+│  ├─ stat-core              # Pure Rust statistics library
+│  ├─ stat-wasm              # Main WASM bindings
+│  ├─ stat-wasm-stats        # Statistics module WASM bindings
+│  ├─ stat-wasm-distributions # Distributions module WASM bindings
+│  ├─ stat-wasm-quantiles    # Quantiles module WASM bindings
+│  ├─ stat-wasm-correlation  # Correlation module WASM bindings
+│  └─ stat-wasm-tests        # Statistical tests module WASM bindings
 ├─ js/
 │  ├─ package/        # TypeScript wrapper and NPM package
-│  └─ bench/          # Performance benchmarks vs jStat
+│  ├─ bench/          # Performance benchmarks vs jStat
+│  └─ tests/          # Test suite
+├─ docs/              # Documentation site (VitePress)
 └─ tools/             # Build scripts
 ```
 
