@@ -93,44 +93,347 @@ function extractJSDoc(tsContent, functionName) {
   };
 }
 
-function generateFunctionPage(functionName, jsdoc, category) {
-  // Generate a better default example based on function signature
-  let defaultExample;
-  if (jsdoc.examples && jsdoc.examples.length > 0) {
-    defaultExample = jsdoc.examples[0];
-  } else {
-    // Generate a simple example based on function name
-    if (functionName === 'sum' || functionName === 'mean' || functionName === 'median' || functionName === 'min' || functionName === 'max') {
-      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
+function generateDefaultExample(functionName, jsdoc, tsContent) {
+  // If JSDoc has examples, use the first one
+  if (jsdoc && jsdoc.examples && jsdoc.examples.length > 0) {
+    return jsdoc.examples[0];
+  }
+
+  // Try to extract function signature from TypeScript content
+  const functionRegex = new RegExp(
+    `(?:export\\s+)?(?:async\\s+)?function\\s+${functionName}\\s*\\(([^)]*)\\)`,
+    'm'
+  );
+  const match = tsContent ? tsContent.match(functionRegex) : null;
+  const params = match ? match[1].split(',').map(p => p.trim().split(':')[0].trim()) : [];
+
+  // Single array parameter functions (most stats functions)
+  const singleArrayFunctions = [
+    'sum', 'mean', 'variance', 'sampleVariance', 'stdev', 'sampleStdev', 
+    'min', 'max', 'product', 'range', 'median', 'mode', 'geomean', 
+    'skewness', 'kurtosis', 'coeffvar', 'meandev', 'meddev', 'deviation',
+    'cumsum', 'cumprod', 'diff', 'rank', 'histogram', 'quartiles', 'iqr'
+  ];
+  
+  if (singleArrayFunctions.includes(functionName)) {
+    return `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
-const data = [1, 2, 3, 4, 5];
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const result = ${functionName}(data);
 result;`;
-    } else if (functionName === 'corrcoeff' || functionName === 'covariance' || functionName === 'spearmancoeff') {
-      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
+  }
+
+  // Two array parameter functions (correlation, regression)
+  const twoArrayFunctions = ['corrcoeff', 'covariance', 'spearmancoeff', 'regress', 'regressNaive', 'regressSimd', 'regressWasmKernels'];
+  if (twoArrayFunctions.includes(functionName)) {
+    return `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 const x = [1, 2, 3, 4, 5];
 const y = [2, 4, 6, 8, 10];
 const result = ${functionName}(x, y);
 result;`;
-    } else if (functionName.startsWith('normal') || functionName.startsWith('gamma') || functionName.startsWith('beta')) {
-      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
+  }
+
+  // Array + number parameter functions
+  if (functionName === 'percentile' || functionName === 'percentileInclusive' || functionName === 'percentileExclusive') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 0.5);
+result;`;
+  }
+
+  if (functionName === 'percentileOfScore' || functionName === 'qscore') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 7);
+result;`;
+  }
+
+  if (functionName === 'qtest') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 5, 0.25, 0.75);
+result;`;
+  }
+
+  if (functionName === 'stanMoment') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 3);
+result;`;
+  }
+
+  if (functionName === 'ttest') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 5);
+result;`;
+  }
+
+  if (functionName === 'ztest') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 5, 2);
+result;`;
+  }
+
+  if (functionName === 'normalci') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const result = ${functionName}(0.05, 100, 15);
+result;`;
+  }
+
+  if (functionName === 'tci') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const result = ${functionName}(0.05, 100, 15, 20);
+result;`;
+  }
+
+  // Array + array parameter (quantiles, percentiles)
+  if (functionName === 'quantiles' || functionName === 'percentiles') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, [0.25, 0.5, 0.75]);
+result;`;
+  }
+
+  // Weighted functions
+  if (functionName === 'weightedPercentile' || functionName === 'weightedMedian') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5];
+const weights = [1, 1, 2, 1, 1];
+const result = ${functionName}(data, weights${functionName === 'weightedPercentile' ? ', 0.5' : ''});
+result;`;
+  }
+
+  if (functionName === 'weightedQuantiles') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5];
+const weights = [1, 1, 2, 1, 1];
+const result = ${functionName}(data, weights, [0.25, 0.5, 0.75]);
+result;`;
+  }
+
+  // Histogram functions
+  if (functionName === 'histogramEdges') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const edges = [0, 3, 6, 10];
+const result = ${functionName}(data, edges);
+result;`;
+  }
+
+  if (functionName === 'histogramBinning') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data, 5);
+result;`;
+  }
+
+  // ANOVA functions
+  if (functionName === 'anovaFScore' || functionName === 'anovaTest') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const group1 = [2, 3, 7, 2, 6];
+const group2 = [10, 11, 14, 13, 15];
+const group3 = [20, 21, 24, 23, 25];
+const result = ${functionName}([group1, group2, group3]);
+result;`;
+  }
+
+  if (functionName === 'anovaFScoreCategorical' || functionName === 'anovaTestCategorical') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const groups = ['A', 'A', 'B', 'B', 'C', 'C'];
+const values = [10, 12, 20, 22, 30, 32];
+const result = ${functionName}(groups, values);
+result;`;
+  }
+
+  if (functionName === 'tukeyHsdCategorical') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const groups = ['A', 'A', 'B', 'B', 'C', 'C'];
+const values = [10, 12, 20, 22, 30, 32];
+const result = ${functionName}(groups, values);
+result;`;
+  }
+
+  if (functionName === 'chiSquareTest') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const cat1 = ['A', 'A', 'B', 'B', 'C', 'C'];
+const cat2 = ['X', 'Y', 'X', 'Y', 'X', 'Y'];
+const result = ${functionName}(cat1, cat2);
+result;`;
+  }
+
+  // Pooled functions
+  if (functionName === 'pooledvariance' || functionName === 'pooledstdev') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data1 = [1, 2, 3, 4, 5];
+const data2 = [6, 7, 8, 9, 10];
+const result = ${functionName}(data1, data2);
+result;`;
+  }
+
+  // Distribution functions
+  const distributionFunctions = [
+    'normal', 'gamma', 'beta', 'studentT', 'chiSquared', 'fisherF', 
+    'exponential', 'poisson', 'binomial', 'uniform', 'cauchy', 'laplace',
+    'logNormal', 'weibull', 'pareto', 'triangular', 'inverseGamma', 'negativeBinomial'
+  ];
+  
+  if (distributionFunctions.includes(functionName)) {
+    // Different distributions have different parameter structures
+    if (functionName === 'normal') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
 const dist = ${functionName}({ mean: 0, sd: 1 });
 const result = dist.pdf(0);
 result;`;
-    } else {
-      defaultExample = `import { init, ${functionName} } from '@addmaple/stats';
+    } else if (functionName === 'gamma') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
 await init();
 
-// Example usage
-const result = ${functionName}(/* your parameters */);
+const dist = ${functionName}({ shape: 2, rate: 1 });
+const result = dist.pdf(1);
+result;`;
+    } else if (functionName === 'beta') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ alpha: 2, beta: 5 });
+const result = dist.pdf(0.3);
+result;`;
+    } else if (functionName === 'studentT') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ dof: 10 });
+const result = dist.pdf(0);
+result;`;
+    } else if (functionName === 'chiSquared') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ dof: 5 });
+const result = dist.pdf(3);
+result;`;
+    } else if (functionName === 'fisherF') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ df1: 3, df2: 10 });
+const result = dist.pdf(2);
+result;`;
+    } else if (functionName === 'exponential') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ rate: 0.5 });
+const result = dist.pdf(1);
+result;`;
+    } else if (functionName === 'poisson') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ lambda: 3 });
+const result = dist.pdf(2);
+result;`;
+    } else if (functionName === 'binomial') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ n: 10, p: 0.5 });
+const result = dist.pdf(5);
+result;`;
+    } else if (functionName === 'uniform') {
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}({ min: 0, max: 1 });
+const result = dist.pdf(0.5);
+result;`;
+    } else {
+      // Generic distribution example
+      return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const dist = ${functionName}();
+const result = dist.pdf(0);
 result;`;
     }
   }
+
+  // cumreduce has a custom reducer
+  if (functionName === 'cumreduce') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5];
+const result = ${functionName}(data, 0, (acc, val) => acc + val);
+result;`;
+  }
+
+  // Default fallback - try to infer from params
+  if (params.length === 1 && params[0] === 'data') {
+    return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const result = ${functionName}(data);
+result;`;
+  }
+
+  // If we can't determine, provide a minimal working example
+  return `import { init, ${functionName} } from '@addmaple/stats';
+await init();
+
+// Example usage
+const data = [1, 2, 3, 4, 5];
+const result = ${functionName}(data);
+result;`;
+}
+
+function generateFunctionPage(functionName, jsdoc, category, tsContent = '') {
+  // Generate a better default example based on function signature
+  const defaultExample = generateDefaultExample(functionName, jsdoc, tsContent);
 
   const paramsTable = jsdoc.params && jsdoc.params.length > 0
     ? `\n### Parameters\n\n| Name | Description |\n|------|-------------|\n${jsdoc.params.map(p => `| \`${p.name}\` | ${p.description} |`).join('\n')}\n`
@@ -202,7 +505,7 @@ async function generatePages() {
           }
         }
         
-        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category);
+        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category, tsContent);
         const functionDir = join(outputDir, functionName);
         await mkdir(functionDir, { recursive: true });
         const pagePath = join(functionDir, 'index.md');
@@ -230,7 +533,7 @@ async function generatePages() {
           }
         }
         
-        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category);
+        const pageContent = generateFunctionPage(functionName, jsdoc || {}, category, tsContent);
         const functionDir = join(outputDir, functionName);
         await mkdir(functionDir, { recursive: true });
         const pagePath = join(functionDir, 'index.md');

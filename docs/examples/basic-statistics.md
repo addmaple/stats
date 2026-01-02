@@ -52,7 +52,7 @@ const measurements = [
 ];
 
 const avg = mean(measurements);
-const variance = variance(measurements);
+const varValue = variance(measurements);
 const stdDev = stdev(measurements); // Population variance for all products
 const spread = max(measurements) - min(measurements);
 
