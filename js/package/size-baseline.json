@@ -1,37 +1,32 @@
 {
   "stats": {
-    "js": 739,
-    "wasm": 20171,
-    "total": 20910
+    "js": 1651,
+    "wasm": 19074,
+    "total": 20725
   },
   "distributions": {
-    "js": 1518,
-    "wasm": 42189,
-    "total": 43707
+    "js": 1600,
+    "wasm": 28067,
+    "total": 29667
   },
   "quantiles": {
-    "js": 790,
-    "wasm": 23625,
-    "total": 24415
+    "js": 2037,
+    "wasm": 20042,
+    "total": 22079
   },
   "correlation": {
-    "js": 476,
-    "wasm": 11930,
-    "total": 12406
+    "js": 608,
+    "wasm": 10075,
+    "total": 10683
   },
   "tests": {
-    "js": 743,
-    "wasm": 20109,
-    "total": 20852
+    "js": 2581,
+    "wasm": 36106,
+    "total": 38687
   },
   "index": {
-    "js": 18497,
-    "wasm": 82982,
-    "total": 101479
+    "js": 1051,
+    "wasm": 83737,
+    "total": 84788
   }
 }
-
-
-
-
-

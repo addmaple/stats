@@ -23,13 +23,15 @@ const BASELINE_FILE = join(ROOT_DIR, 'size-baseline.json');
 const GROWTH_TOLERANCE = 0.10;
 
 // Modules to check
+// Note: wasm-bindgen-lite generates .simd.wasm and .base.wasm files
+// We check the SIMD version as that's what modern browsers use
 const MODULES = [
-  { name: 'stats', jsPath: 'dist/stats.js', wasmPath: 'pkg/stat-wasm-stats/stat_wasm_stats_bg.wasm' },
-  { name: 'distributions', jsPath: 'dist/distributions.js', wasmPath: 'pkg/stat-wasm-distributions/stat_wasm_distributions_bg.wasm' },
-  { name: 'quantiles', jsPath: 'dist/quantiles.js', wasmPath: 'pkg/stat-wasm-quantiles/stat_wasm_quantiles_bg.wasm' },
-  { name: 'correlation', jsPath: 'dist/correlation.js', wasmPath: 'pkg/stat-wasm-correlation/stat_wasm_correlation_bg.wasm' },
-  { name: 'tests', jsPath: 'dist/tests.js', wasmPath: 'pkg/stat-wasm-tests/stat_wasm_tests_bg.wasm' },
-  { name: 'index', jsPath: 'dist/index.js', wasmPath: 'pkg/stat-wasm/stat_wasm_bg.wasm' },
+  { name: 'stats', jsPath: 'dist/stats.js', wasmPath: 'pkg/stat-wasm-stats/wasm/stat_wasm_stats.simd.wasm' },
+  { name: 'distributions', jsPath: 'dist/distributions.js', wasmPath: 'pkg/stat-wasm-distributions/wasm/stat_wasm_distributions.simd.wasm' },
+  { name: 'quantiles', jsPath: 'dist/quantiles.js', wasmPath: 'pkg/stat-wasm-quantiles/wasm/stat_wasm_quantiles.simd.wasm' },
+  { name: 'correlation', jsPath: 'dist/correlation.js', wasmPath: 'pkg/stat-wasm-correlation/wasm/stat_wasm_correlation.simd.wasm' },
+  { name: 'tests', jsPath: 'dist/tests.js', wasmPath: 'pkg/stat-wasm-tests/wasm/stat_wasm_tests.simd.wasm' },
+  { name: 'index', jsPath: 'dist/index.js', wasmPath: 'pkg/stat-wasm/wasm/stat_wasm.simd.wasm' },
 ];
 
 function getFileSize(filePath) {
