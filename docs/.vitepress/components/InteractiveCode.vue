@@ -78,8 +78,9 @@ onMounted(async () => {
     // For local development, the prebuild script will build the package if Rust is available
     const module = await import('@addmaple/stats');
     
-    // Initialize the library
-    await module.init();
+    // Initialize the library with inline WASM for the documentation site
+    // This avoids fetching .wasm files from relative paths which often fail in SPA environments
+    await module.init({ inline: true });
     statsModule = module;
     isInitialized.value = true;
   } catch (err) {

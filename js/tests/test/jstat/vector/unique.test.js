@@ -1,9 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
-// SKIPPED: unique is not yet implemented in @stats/core
+// SKIPPED: unique is not yet implemented in @addmaple/stats
 describe('unique - jstat compatibility', () => {
-  it('not yet implemented', () => {
-    assert.ok(true, 'unique is not yet implemented');
-  });
+  it.skip('unique is not yet implemented', () => {});
 });

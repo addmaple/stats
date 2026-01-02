@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, diff } from '@stats/core';
+import { init, diff } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: diff-test.js
@@ -29,12 +29,7 @@ describe('diff - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('diff matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('diff matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('diff callback', async () => {
     await init();
@@ -46,11 +41,6 @@ describe('diff - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('diff matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('diff matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

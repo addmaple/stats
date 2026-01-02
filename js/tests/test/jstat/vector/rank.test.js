@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, rank } from '@stats/core';
+import { init, rank } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: rank-test.js
@@ -29,12 +29,7 @@ describe('rank - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('rank matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('rank matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('return rank with ties', async () => {
     await init();

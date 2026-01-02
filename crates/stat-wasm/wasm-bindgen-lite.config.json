@@ -1,0 +1,25 @@
+{
+  "outDir": "pkg",
+  "artifactBaseName": "stat_wasm",
+  "autoInit": "lazy",
+  "targets": {
+    "baseline": true,
+    "simd": true
+  },
+  "js": {
+    "emit": [
+      "node",
+      "browser",
+      "inline",
+      "inline"
+    ],
+    "custom": "src/wrapper.js"
+  },
+  "exports": [],
+  "wasmOpt": {
+    "mode": "on",
+    "args": [
+      "-O3"
+    ]
+  }
+}

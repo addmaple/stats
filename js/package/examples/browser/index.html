@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@addmaple/stats Browser Example</title>
+    <style>
+        body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+        .success { color: green; font-weight: bold; }
+        .info { color: #666; font-size: 0.9rem; }
+        button { padding: 0.5rem 1rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>@addmaple/stats Browser Example</h1>
+    <p>This example demonstrates how to use the library directly in the browser.</p>
+
+    <div>
+        <button id="runBtn">Run Statistics Test</button>
+        <span id="status"></span>
+    </div>
+
+    <h3>Results:</h3>
+    <pre id="output">Click the button to run tests...</pre>
+
+    <div class="info">
+        <p><strong>Note:</strong> In this example, we are using the <code>inline</code> mode which embeds the WASM directly in JS, avoiding extra network requests for <code>.wasm</code> files.</p>
+    </div>
+
+    <!-- We use type="module" to support ESM imports -->
+    <script type="module">
+        // In a real app, you would import from the CDN or your node_modules
+        // import { init, mean, normal } from 'https://esm.sh/@addmaple/stats';
+        
+        // For this local example, we'll use the local dist (assuming a local server is running)
+        import { init, mean, variance, normal } from '../../dist/index.js';
+
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+        const runBtn = document.getElementById('runBtn');
+
+        runBtn.addEventListener('click', async () => {
+            try {
+                status.textContent = 'Initializing...';
+                output.textContent = 'Loading WASM...';
+
+                // 1. Initialize
+                // We use inline: true to demonstrate the zero-fetch capability
+                await init({ inline: true });
+                
+                status.innerHTML = '<span class="success">✅ WASM Ready</span>';
+                
+                // 2. Perform Calculations
+                const data = [1.2, 2.3, 3.4, 4.5, 5.6];
+                const m = mean(data);
+                const v = variance(data);
+                
+                const dist = normal({ mean: 0, sd: 1 });
+                const pdf0 = dist.pdf(0);
+
+                // 3. Display Output
+                let results = `Data: [${data.join(', ')}]\n\n`;
+                results += `Mean:     ${m.toFixed(4)}\n`;
+                results += `Variance: ${v.toFixed(4)}\n\n`;
+                results += `Normal Distribution (0, 1):\n`;
+                results += `PDF(0):   ${pdf0.toFixed(4)}\n`;
+                
+                output.textContent = results;
+
+            } catch (err) {
+                console.error(err);
+                status.innerHTML = `<span style="color: red">❌ Error: ${err.message}</span>`;
+                output.textContent = 'Check console for details.';
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, mean } from '@stats/core';
+import { init, mean } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: mean-test.js
@@ -29,39 +29,19 @@ describe('mean - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('mean matrix cols', async () => {
-    await init();
+  it.skip('mean matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('mean full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('mean full matrix', async () => {
-    await init();
+  it.skip('mean callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('mean matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('mean callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('mean matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('mean full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('mean full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
+
+
+
+

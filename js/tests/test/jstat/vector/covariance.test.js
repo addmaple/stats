@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, covariance } from '@stats/core';
+import { init, covariance } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: covariance-test.js

@@ -31,3 +31,11 @@ TypeScript definitions are included. No additional `@types` package needed.
 import { init, mean } from '@addmaple/stats';
 ```
 
+
+
+
+
+
+
+
+

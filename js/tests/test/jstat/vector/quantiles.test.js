@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, quantiles } from '@stats/core';
+import { init, quantiles } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: quantiles-test.js
@@ -31,12 +31,7 @@ describe('quantiles - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('quantiles matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('quantiles matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('quantiles normal dist', async () => {
     await init();
@@ -89,11 +84,6 @@ describe('quantiles - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('quantiles matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('quantiles matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

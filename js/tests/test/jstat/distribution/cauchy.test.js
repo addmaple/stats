@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, cauchy } from '@stats/core';
+import { init, cauchy } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: cauchy-test.js
@@ -9,32 +9,12 @@ describe('cauchy - jstat compatibility', () => {
     await init();
   });
 
-  it('check pdf calculation', async () => {
-    await init();
+  it.skip('check pdf calculation (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf calculations (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf calculations', async () => {
-    await init();
+  it.skip('median (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('median', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('mode', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('mode (skipped: test needs manual conversion)', async () => {});
 
 });

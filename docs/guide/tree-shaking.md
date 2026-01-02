@@ -117,3 +117,11 @@ RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target bundler --out-di
 - Use `@addmaple/stats` for the full module with all functions
 - Bundlers (webpack, rollup, esbuild) will automatically tree-shake unused modules
 
+
+
+
+
+
+
+
+

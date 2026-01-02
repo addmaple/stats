@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, cumprod } from '@stats/core';
+import { init, cumprod } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: cumprod-test.js
@@ -29,19 +29,9 @@ describe('cumprod - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('cumprod matrix cols', async () => {
-    await init();
+  it.skip('cumprod matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('cumprod matrix rows', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('cumprod matrix rows (skipped: matrix operations not implemented)', async () => {});
 
   it('cumprod callback', async () => {
     await init();
@@ -53,18 +43,8 @@ describe('cumprod - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('cumprod matrix cols callback', async () => {
-    await init();
+  it.skip('cumprod matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('cumprod matrix rows callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('cumprod matrix rows callback (skipped: matrix operations not implemented)', async () => {});
 
 });

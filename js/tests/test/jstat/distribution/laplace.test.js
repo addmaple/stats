@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, laplace } from '@stats/core';
+import { init, laplace } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: laplace-test.js
@@ -9,46 +9,16 @@ describe('laplace - jstat compatibility', () => {
     await init();
   });
 
-  it('check pdf calculation', async () => {
-    await init();
+  it.skip('check pdf calculation (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('check cdf calculation (skipped: test needs manual conversion)', async () => {});
 
-  it('check cdf calculation', async () => {
-    await init();
+  it.skip('mean (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('median (skipped: test needs manual conversion)', async () => {});
 
-  it('mean', async () => {
-    await init();
+  it.skip('mode (skipped: test needs manual conversion)', async () => {});
 
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('median', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('mode', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('variance', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
+  it.skip('variance (skipped: test needs manual conversion)', async () => {});
 
 });

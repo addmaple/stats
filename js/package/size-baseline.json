@@ -1,0 +1,32 @@
+{
+  "stats": {
+    "js": 1651,
+    "wasm": 19074,
+    "total": 20725
+  },
+  "distributions": {
+    "js": 1600,
+    "wasm": 28067,
+    "total": 29667
+  },
+  "quantiles": {
+    "js": 2037,
+    "wasm": 20042,
+    "total": 22079
+  },
+  "correlation": {
+    "js": 608,
+    "wasm": 10075,
+    "total": 10683
+  },
+  "tests": {
+    "js": 2581,
+    "wasm": 36106,
+    "total": 38687
+  },
+  "index": {
+    "js": 1051,
+    "wasm": 83737,
+    "total": 84788
+  }
+}

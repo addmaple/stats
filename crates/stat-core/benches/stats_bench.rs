@@ -1,8 +1,178 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use ndarray::ArrayView1;
 use stat_core::*;
+use std::fs;
 
 fn generate_data(n: usize) -> Vec<f64> {
     (0..n).map(|i| (i as f64) * 0.1).collect()
+}
+
+fn regress_ndarray(x: &[f64], y: &[f64]) -> RegressionResult {
+    if x.len() != y.len() || x.len() < 2 {
+        return RegressionResult {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+            residuals: vec![],
+        };
+    }
+
+    let xa = ArrayView1::from(x);
+    let ya = ArrayView1::from(y);
+
+    let x_mean = xa.mean().unwrap_or(f64::NAN);
+    let y_mean = ya.mean().unwrap_or(f64::NAN);
+
+    // centered
+    let dx = &xa - x_mean;
+    let dy = &ya - y_mean;
+
+    let num = (&dx * &dy).sum();
+    let den = (&dx * &dx).sum();
+    if den == 0.0 || den.is_nan() {
+        return RegressionResult {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+            residuals: vec![],
+        };
+    }
+
+    let slope = num / den;
+    let intercept = y_mean - slope * x_mean;
+
+    let y_pred = xa.mapv(|xi| xi.mul_add(slope, intercept));
+    let residuals_arr = &ya - &y_pred;
+    let residuals = residuals_arr.to_vec();
+
+    let ss_res = (&residuals_arr * &residuals_arr).sum();
+    let ss_tot = (&dy * &dy).sum();
+    let r_squared = if ss_tot > 0.0 && !ss_tot.is_nan() {
+        1.0 - (ss_res / ss_tot)
+    } else {
+        f64::NAN
+    };
+
+    RegressionResult {
+        slope,
+        intercept,
+        r_squared,
+        residuals,
+    }
+}
+
+fn regress_faer_normal_eq(x: &[f64], y: &[f64]) -> RegressionResult {
+    use faer::linalg::solvers::Solve;
+
+    if x.len() != y.len() || x.len() < 2 {
+        return RegressionResult {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+            residuals: vec![],
+        };
+    }
+
+    let n = x.len() as f64;
+
+    // Compute the normal equation terms in one pass
+    let mut sum_x = 0.0;
+    let mut sum_y = 0.0;
+    let mut sum_xx = 0.0;
+    let mut sum_xy = 0.0;
+    for i in 0..x.len() {
+        let xi = x[i];
+        let yi = y[i];
+        sum_x += xi;
+        sum_y += yi;
+        sum_xx = xi.mul_add(xi, sum_xx);
+        sum_xy = xi.mul_add(yi, sum_xy);
+    }
+
+    // Solve:
+    // [ n      sum_x  ] [ intercept ] = [ sum_y  ]
+    // [ sum_x  sum_xx ] [ slope     ]   [ sum_xy ]
+    let a = faer::mat![[n, sum_x], [sum_x, sum_xx]];
+    let b = faer::col![sum_y, sum_xy];
+    let sol = a.full_piv_lu().solve(&b);
+
+    // faer returns a column; lane 0 is intercept, lane 1 is slope
+    let intercept = sol[0];
+    let slope = sol[1];
+    if slope.is_nan() || intercept.is_nan() {
+        return RegressionResult {
+            slope: f64::NAN,
+            intercept: f64::NAN,
+            r_squared: f64::NAN,
+            residuals: vec![],
+        };
+    }
+
+    // Residuals + R² (scalar loops to avoid additional faer allocations)
+    let y_mean = sum_y / n;
+    let mut residuals = Vec::<f64>::with_capacity(x.len());
+    let mut ss_res = 0.0;
+    let mut ss_tot = 0.0;
+    for i in 0..x.len() {
+        let y_pred = x[i].mul_add(slope, intercept);
+        let r = y[i] - y_pred;
+        residuals.push(r);
+        ss_res = r.mul_add(r, ss_res);
+        let dy = y[i] - y_mean;
+        ss_tot = dy.mul_add(dy, ss_tot);
+    }
+
+    let r_squared = if ss_tot > 0.0 && !ss_tot.is_nan() {
+        1.0 - (ss_res / ss_tot)
+    } else {
+        f64::NAN
+    };
+
+    RegressionResult {
+        slope,
+        intercept,
+        r_squared,
+        residuals,
+    }
+}
+
+fn load_diabetes_data_rows(rows: usize) -> (Vec<f64>, Vec<f64>) {
+    // Load first N rows from diabetes-prediction.csv
+    // x = age, y = bmi
+    let path = "../../data/diabetes-prediction.csv";
+    let contents = fs::read_to_string(path).expect("Failed to read diabetes-prediction.csv");
+
+    let mut x = Vec::with_capacity(rows);
+    let mut y = Vec::with_capacity(rows);
+
+    for line in contents.lines().skip(1).take(rows) {
+        let mut it = line.split(',');
+        // Columns: gender,age,hypertension,heart_disease,smoking_history,bmi,...
+        let _gender = it.next();
+        let age = it.next();
+        // Skip hypertension, heart_disease, smoking_history
+        let _h = it.next();
+        let _hd = it.next();
+        let _sm = it.next();
+        let bmi = it.next();
+
+        if let (Some(age), Some(bmi)) = (age, bmi) {
+            if let (Ok(age), Ok(bmi)) = (age.parse::<f64>(), bmi.parse::<f64>()) {
+                x.push(age);
+                y.push(bmi);
+            }
+        }
+    }
+
+    assert_eq!(
+        x.len(),
+        rows,
+        "Expected {rows} rows, got {} (x) / {} (y).",
+        x.len(),
+        y.len()
+    );
+
+    (x, y)
 }
 
 fn bench_sum(c: &mut Criterion) {
@@ -171,13 +341,79 @@ fn bench_kurtosis(c: &mut Criterion) {
 
 fn bench_histogram(c: &mut Criterion) {
     let data = generate_data(1_000_000);
-    c.bench_function("histogram 1M (10 bins)", |b| b.iter(|| histogram(black_box(&data), 10)));
+    c.bench_function("histogram 1M (10 bins)", |b| {
+        b.iter(|| histogram(black_box(&data), 10))
+    });
 
     let data = generate_data(10_000);
-    c.bench_function("histogram 10K (10 bins)", |b| b.iter(|| histogram(black_box(&data), 10)));
-    
+    c.bench_function("histogram 10K (10 bins)", |b| {
+        b.iter(|| histogram(black_box(&data), 10))
+    });
+
     let data = generate_data(1_000);
-    c.bench_function("histogram 1K (10 bins)", |b| b.iter(|| histogram(black_box(&data), 10)));
+    c.bench_function("histogram 1K (10 bins)", |b| {
+        b.iter(|| histogram(black_box(&data), 10))
+    });
+}
+
+fn bench_regress(c: &mut Criterion) {
+    let (x, y) = load_diabetes_data_rows(10_000);
+    let x_ref = &x;
+    let y_ref = &y;
+
+    c.bench_function("regress_naive 10K (diabetes)", |b| {
+        b.iter(|| regress_naive(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_simd 10K (diabetes)", |b| {
+        b.iter(|| regress_simd(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_kernels 10K (diabetes)", |b| {
+        b.iter(|| regress_kernels(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress 10K (diabetes)", |b| {
+        b.iter(|| regress(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_ndarray 10K (diabetes)", |b| {
+        b.iter(|| regress_ndarray(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_faer_normal_eq 10K (diabetes)", |b| {
+        b.iter(|| regress_faer_normal_eq(black_box(x_ref), black_box(y_ref)))
+    });
+}
+
+fn bench_regress_100k(c: &mut Criterion) {
+    let (x, y) = load_diabetes_data_rows(100_000);
+    let x_ref = &x;
+    let y_ref = &y;
+
+    c.bench_function("regress_naive 100K (diabetes)", |b| {
+        b.iter(|| regress_naive(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_simd 100K (diabetes)", |b| {
+        b.iter(|| regress_simd(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_kernels 100K (diabetes)", |b| {
+        b.iter(|| regress_kernels(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress 100K (diabetes)", |b| {
+        b.iter(|| regress(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_ndarray 100K (diabetes)", |b| {
+        b.iter(|| regress_ndarray(black_box(x_ref), black_box(y_ref)))
+    });
+
+    c.bench_function("regress_faer_normal_eq 100K (diabetes)", |b| {
+        b.iter(|| regress_faer_normal_eq(black_box(x_ref), black_box(y_ref)))
+    });
 }
 
 criterion_group!(
@@ -200,6 +436,8 @@ criterion_group!(
     bench_geomean,
     bench_skewness,
     bench_kurtosis,
-    bench_histogram
+    bench_histogram,
+    bench_regress,
+    bench_regress_100k
 );
 criterion_main!(benches);

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, deviation } from '@stats/core';
+import { init, deviation } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: deviation-test.js
@@ -29,12 +29,7 @@ describe('deviation - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('deviation matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('deviation matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('return deviation with equal numbers', async () => {
     await init();

@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init } from '@stats/core';
+import { init } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Generated from: negbin-test.js
-// TODO: Import the function(s) you need from '@stats/core'
+// TODO: Import the function(s) you need from '@addmaple/stats'
 // TODO: Convert jstat test cases below to use our API
 
 describe('negbin - jstat compatibility', () => {

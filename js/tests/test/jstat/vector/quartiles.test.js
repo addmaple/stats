@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, quartiles } from '@stats/core';
+import { init, quartiles } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: quartiles-test.js
@@ -29,12 +29,7 @@ describe('quartiles - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('quartiles matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('quartiles matrix cols (skipped: matrix operations not implemented)', async () => {});
 
   it('quartiles callback', async () => {
     await init();
@@ -46,11 +41,6 @@ describe('quartiles - jstat compatibility', () => {
     assert.deepEqual(Array.from(ourResult), Array.from(jstatResult));
   });
 
-  it('quartiles matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('quartiles matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

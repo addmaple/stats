@@ -4,7 +4,7 @@ import wasm from 'vite-plugin-wasm'
 export default defineConfig({
   title: '@addmaple/stats',
   description: 'A faster version of jStat using Rust compiled to WebAssembly under the hood',
-  base: '/',
+  base: '/stats/',
   outDir: './dist',
   ignoreDeadLinks: false,
   
@@ -13,7 +13,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/' },
       { text: 'API Reference', link: '/api/' },
       { text: 'Examples', link: '/examples/' },
-      { text: 'GitHub', link: 'https://github.com/yourusername/stats' }
+      { text: 'GitHub', link: 'https://github.com/addmaple/stats' }
     ],
     
     sidebar: {
@@ -31,6 +31,8 @@ export default defineConfig({
           items: [
             { text: 'Initialization', link: '/guide/initialization' },
             { text: 'Performance', link: '/guide/performance' },
+            { text: 'Linear Regression Performance', link: '/guide/linear-regression-performance' },
+            { text: 'Histogram Binning Strategies', link: '/guide/histogram-binning' },
             { text: 'Tree-Shaking', link: '/guide/tree-shaking' },
             { text: 'Browser Support', link: '/guide/browser-support' }
           ]
@@ -91,6 +93,15 @@ export default defineConfig({
                 { text: 'percentile', link: '/api/functions/percentile/' },
                 { text: 'quartiles', link: '/api/functions/quartiles/' },
                 { text: 'iqr', link: '/api/functions/iqr/' }
+              ]
+            },
+            { 
+              text: 'Weighted Quantiles',
+              collapsed: true,
+              items: [
+                { text: 'weightedPercentile', link: '/api/functions/weightedPercentile/' },
+                { text: 'weightedQuantiles', link: '/api/functions/weightedQuantiles/' },
+                { text: 'weightedMedian', link: '/api/functions/weightedMedian/' }
               ]
             },
             { text: 'All Functions', link: '/api/functions/' }
@@ -167,7 +178,7 @@ export default defineConfig({
           text: 'Complete Reference',
           items: [
             { text: 'All Functions', link: '/api/functions/' },
-            { text: 'Complete API Reference', link: '/api/README' }
+            { text: 'Complete API Reference', link: '/api/' }
           ]
         },
         {
@@ -208,7 +219,7 @@ export default defineConfig({
     },
     
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yourusername/stats' }
+      { icon: 'github', link: 'https://github.com/addmaple/stats' }
     ],
     
     search: {

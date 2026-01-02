@@ -1,57 +1,30 @@
+#![allow(clippy::missing_safety_doc, clippy::needless_range_loop)]
 #![allow(clippy::not_unsafe_ptr_arg_deref, dead_code)]
 
-use wasm_bindgen::prelude::*;
+use std::alloc::{alloc, dealloc, Layout};
+use std::mem;
 
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct ArrayResult {
-    ptr: usize,
-    len: usize,
+#[no_mangle]
+pub unsafe extern "C" fn alloc_bytes(len: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    alloc(layout)
 }
 
-#[wasm_bindgen]
-impl ArrayResult {
-    #[wasm_bindgen(getter)]
-    pub fn ptr(&self) -> usize {
-        self.ptr
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
+#[no_mangle]
+pub unsafe extern "C" fn free_bytes(ptr: *mut u8, len: usize) {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    dealloc(ptr, layout);
 }
 
-fn vec_to_array_result(mut data: Vec<f64>) -> ArrayResult {
-    let len = data.len();
-    let ptr = data.as_mut_ptr() as usize;
-    std::mem::forget(data);
-    ArrayResult { ptr, len }
+// Memory allocation helpers for specific types
+#[no_mangle]
+pub unsafe extern "C" fn alloc_f64(len: usize) -> *mut f64 {
+    alloc_bytes(len * 8) as *mut f64
 }
 
-#[wasm_bindgen]
-pub fn get_memory() -> JsValue {
-    wasm_bindgen::memory()
-}
-
-#[wasm_bindgen]
-pub fn alloc_f64(len: usize) -> *mut f64 {
-    let mut vec = Vec::<f64>::with_capacity(len);
-    let ptr = vec.as_mut_ptr();
-    std::mem::forget(vec);
-    ptr
-}
-
-#[wasm_bindgen]
-pub fn free_f64(ptr: *mut f64, len: usize) {
-    unsafe {
-        let _ = Vec::from_raw_parts(ptr, len, len);
-    }
+#[no_mangle]
+pub unsafe extern "C" fn free_f64(ptr: *mut f64, len: usize) {
+    free_bytes(ptr as *mut u8, len * 8);
 }
 
 fn slice_from<'a>(ptr: *const f64, len: usize) -> &'a [f64] {
@@ -62,37 +35,33 @@ fn slice_from_mut<'a>(ptr: *mut f64, len: usize) -> &'a mut [f64] {
     unsafe { std::slice::from_raw_parts_mut(ptr, len) }
 }
 
-fn map_distribution_error(err: stat_core::DistributionError) -> JsValue {
-    JsValue::from_str(&err.to_string())
-}
-
 macro_rules! define_scalar_fn {
     ($name:ident, $rust_fn:ident, ($($param:ident : f64),*)) => {
-        #[wasm_bindgen]
-        pub fn $name(x: f64, $($param: f64),*) -> Result<f64, JsValue> {
-            stat_core::$rust_fn(x, $($param),*).map_err(map_distribution_error)
+        #[no_mangle]
+        pub unsafe extern "C" fn $name(x: f64, $($param: f64),*) -> f64 {
+            stat_core::$rust_fn(x, $($param),*).unwrap_or(f64::NAN)
         }
     };
     ($name:ident, $rust_fn:ident, [$($param:ident : f64),*]) => {
-        #[wasm_bindgen]
-        pub fn $name(p: f64, $($param: f64),*) -> Result<f64, JsValue> {
-            stat_core::$rust_fn(p, $($param),*).map_err(map_distribution_error)
+        #[no_mangle]
+        pub unsafe extern "C" fn $name(p: f64, $($param: f64),*) -> f64 {
+            stat_core::$rust_fn(p, $($param),*).unwrap_or(f64::NAN)
         }
     };
 }
 
 macro_rules! define_array_fn {
     ($name:ident, $rust_fn:ident, [$($param:ident : f64),*]) => {
-        #[wasm_bindgen]
-        pub fn $name(
+        #[no_mangle]
+        pub unsafe extern "C" fn $name(
             input_ptr: *const f64,
             len: usize,
             $($param: f64,)*
             output_ptr: *mut f64,
-        ) -> Result<(), JsValue> {
+        ) {
             let input = slice_from(input_ptr, len);
             let output = slice_from_mut(output_ptr, len);
-            stat_core::$rust_fn(input, $($param,)* output).map_err(map_distribution_error)
+            let _ = stat_core::$rust_fn(input, $($param,)* output);
         }
     };
 }
@@ -192,10 +161,10 @@ define_array_fn!(poisson_cdf_inplace, poisson_cdf_array, [lambda: f64]);
 // Binomial distribution (discrete - uses pmf instead of pdf)
 define_scalar_fn!(binomial_pmf_scalar, binomial_pmf, (n: f64, p: f64));
 define_scalar_fn!(binomial_cdf_scalar, binomial_cdf, (n: f64, p: f64));
-// Manual definition to avoid parameter name conflict (p for probability vs p for success probability)
-#[wasm_bindgen]
-pub fn binomial_inv_scalar(prob: f64, n: f64, p: f64) -> Result<f64, JsValue> {
-    stat_core::binomial_inv(prob, n, p).map_err(map_distribution_error)
+
+#[no_mangle]
+pub unsafe extern "C" fn binomial_inv_scalar(prob: f64, n: f64, p: f64) -> f64 {
+    stat_core::binomial_inv(prob, n, p).unwrap_or(f64::NAN)
 }
 define_array_fn!(binomial_pmf_inplace, binomial_pmf_array, [n: f64, p: f64]);
 define_array_fn!(binomial_cdf_inplace, binomial_cdf_array, [n: f64, p: f64]);
@@ -259,10 +228,10 @@ define_array_fn!(invgamma_cdf_inplace, invgamma_cdf_array, [shape: f64, rate: f6
 // Negative binomial distribution (discrete)
 define_scalar_fn!(negbin_pmf_scalar, negbin_pmf, (r: f64, p: f64));
 define_scalar_fn!(negbin_cdf_scalar, negbin_cdf, (r: f64, p: f64));
-// Manual definition to avoid parameter name conflict (p for probability vs p for success probability)
-#[wasm_bindgen]
-pub fn negbin_inv_scalar(prob: f64, r: f64, p: f64) -> Result<f64, JsValue> {
-    stat_core::negbin_inv(prob, r, p).map_err(map_distribution_error)
+
+#[no_mangle]
+pub unsafe extern "C" fn negbin_inv_scalar(prob: f64, r: f64, p: f64) -> f64 {
+    stat_core::negbin_inv(prob, r, p).unwrap_or(f64::NAN)
 }
 define_array_fn!(negbin_pmf_inplace, negbin_pmf_array, [r: f64, p: f64]);
 define_array_fn!(negbin_cdf_inplace, negbin_cdf_array, [r: f64, p: f64]);

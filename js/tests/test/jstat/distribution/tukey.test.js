@@ -1,9 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
-// SKIPPED: tukey is not yet implemented in @stats/core
+// SKIPPED: tukey is not yet implemented in @addmaple/stats
 describe('tukey - jstat compatibility', () => {
-  it('not yet implemented', () => {
-    assert.ok(true, 'tukey is not yet implemented');
-  });
+  it.skip('tukey is not yet implemented', () => {});
 });

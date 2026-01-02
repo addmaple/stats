@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, coeffvar } from '@stats/core';
+import { init, coeffvar } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: coeffvar-test.js
@@ -29,25 +29,10 @@ describe('coeffvar - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('coeffvar matrix cols', async () => {
-    await init();
+  it.skip('coeffvar matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('coeffvar callback (skipped: test needs manual conversion)', async () => {});
 
-  it('coeffvar callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('coeffvar matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('coeffvar matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

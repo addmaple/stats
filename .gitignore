@@ -1,5 +1,6 @@
 # Rust
-/target/
+target/
+**/target
 **/*.rs.bk
 Cargo.lock
 
@@ -22,7 +23,6 @@ dist/
 
 # WASM package directories (these are built artifacts)
 **/pkg/
-!js/package/pkg/
 
 # IDE
 .vscode/

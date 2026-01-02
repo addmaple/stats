@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, median } from '@stats/core';
+import { init, median } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: median-test.js
@@ -29,39 +29,19 @@ describe('median - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('median matrix cols', async () => {
-    await init();
+  it.skip('median matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('median full matrix (skipped: matrix operations not implemented)', async () => {});
 
-  it('median full matrix', async () => {
-    await init();
+  it.skip('median callback (skipped: test needs manual conversion)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('median matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
-  it('median callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('median matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
-
-  it('median full matrix callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('median full matrix callback (skipped: matrix operations not implemented)', async () => {});
 
 });
+
+
+
+
+

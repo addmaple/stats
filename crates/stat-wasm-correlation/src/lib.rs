@@ -1,59 +1,67 @@
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
+#![allow(clippy::missing_safety_doc, clippy::needless_range_loop)]
+#![allow(clippy::not_unsafe_ptr_arg_deref, dead_code)]
 
-use wasm_bindgen::prelude::*;
+use std::alloc::{alloc, dealloc, Layout};
+use std::mem;
 
-#[wasm_bindgen]
-pub fn get_memory() -> JsValue {
-    wasm_bindgen::memory()
+#[no_mangle]
+pub unsafe extern "C" fn alloc_bytes(len: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    alloc(layout)
 }
 
-#[wasm_bindgen]
-pub fn alloc_f64(len: usize) -> *mut f64 {
-    let mut vec = Vec::<f64>::with_capacity(len);
-    let ptr = vec.as_mut_ptr();
-    std::mem::forget(vec);
-    ptr
+#[no_mangle]
+pub unsafe extern "C" fn free_bytes(ptr: *mut u8, len: usize) {
+    let layout = Layout::from_size_align(len, mem::align_of::<u8>()).unwrap();
+    dealloc(ptr, layout);
 }
 
-#[wasm_bindgen]
-pub fn free_f64(ptr: *mut f64, len: usize) {
-    unsafe {
-        let _ = Vec::from_raw_parts(ptr, len, len);
-    }
+#[no_mangle]
+pub unsafe extern "C" fn alloc_f64(len: usize) -> *mut f64 {
+    alloc_bytes(len * 8) as *mut f64
+}
+#[no_mangle]
+pub unsafe extern "C" fn free_f64(ptr: *mut f64, len: usize) {
+    free_bytes(ptr as *mut u8, len * 8);
 }
 
 fn slice_from<'a>(ptr: *const f64, len: usize) -> &'a [f64] {
     unsafe { std::slice::from_raw_parts(ptr, len) }
 }
 
-// Correlation functions
-#[wasm_bindgen]
-pub fn covariance_f64(x_ptr: *const f64, x_len: usize, y_ptr: *const f64, y_len: usize) -> f64 {
+#[no_mangle]
+pub unsafe extern "C" fn covariance_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> f64 {
     if x_len != y_len {
         return f64::NAN;
     }
-    let x = slice_from(x_ptr, x_len);
-    let y = slice_from(y_ptr, y_len);
-    stat_core::covariance(x, y)
+    stat_core::covariance(slice_from(x_ptr, x_len), slice_from(y_ptr, y_len))
 }
-
-#[wasm_bindgen]
-pub fn corrcoeff_f64(x_ptr: *const f64, x_len: usize, y_ptr: *const f64, y_len: usize) -> f64 {
+#[no_mangle]
+pub unsafe extern "C" fn corrcoeff_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> f64 {
     if x_len != y_len {
         return f64::NAN;
     }
-    let x = slice_from(x_ptr, x_len);
-    let y = slice_from(y_ptr, y_len);
-    stat_core::corrcoeff(x, y)
+    stat_core::corrcoeff(slice_from(x_ptr, x_len), slice_from(y_ptr, y_len))
 }
-
-#[wasm_bindgen]
-pub fn spearmancoeff_f64(x_ptr: *const f64, x_len: usize, y_ptr: *const f64, y_len: usize) -> f64 {
+#[no_mangle]
+pub unsafe extern "C" fn spearmancoeff_f64(
+    x_ptr: *const f64,
+    x_len: usize,
+    y_ptr: *const f64,
+    y_len: usize,
+) -> f64 {
     if x_len != y_len {
         return f64::NAN;
     }
-    let x = slice_from(x_ptr, x_len);
-    let y = slice_from(y_ptr, y_len);
-    stat_core::spearmancoeff(x, y)
+    stat_core::spearmancoeff(slice_from(x_ptr, x_len), slice_from(y_ptr, y_len))
 }
-

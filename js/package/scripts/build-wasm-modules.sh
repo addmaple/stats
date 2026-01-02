@@ -4,59 +4,30 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-export RUSTFLAGS="-C target-feature=+simd128"
+WASM_BINDGEN_LITE="$PACKAGE_DIR/node_modules/.bin/wasm-bindgen-lite"
 
-echo "Building WASM modules for tree-shaking..."
+echo "Building WASM modules using wasm-bindgen-lite..."
 echo "ROOT_DIR: $ROOT_DIR"
 echo "PACKAGE_DIR: $PACKAGE_DIR"
 
-# Build stats module
-echo "Building stat-wasm-stats..."
-cd "$ROOT_DIR/crates/stat-wasm-stats"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm-stats"
-cp -r "$ROOT_DIR/crates/stat-wasm-stats/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm-stats/"
+build_module() {
+    local crate_name=$1
+    local out_dir="$PACKAGE_DIR/pkg/$crate_name"
+    echo "Building $crate_name..."
+    mkdir -p "$out_dir"
+    cd "$ROOT_DIR/crates/$crate_name"
+    # wasm-bindgen-lite expects target/ in the crate dir, but it's in the workspace root
+    if [ ! -L "target" ]; then
+        ln -s ../../target target
+    fi
+    "$WASM_BINDGEN_LITE" build --crate . --out "$out_dir"
+}
 
-# Build distributions module
-echo "Building stat-wasm-distributions..."
-cd "$ROOT_DIR/crates/stat-wasm-distributions"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm-distributions"
-cp -r "$ROOT_DIR/crates/stat-wasm-distributions/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm-distributions/"
+build_module "stat-wasm-stats"
+build_module "stat-wasm-distributions"
+build_module "stat-wasm-quantiles"
+build_module "stat-wasm-correlation"
+build_module "stat-wasm-tests"
+build_module "stat-wasm"
 
-# Build quantiles module
-echo "Building stat-wasm-quantiles..."
-cd "$ROOT_DIR/crates/stat-wasm-quantiles"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm-quantiles"
-cp -r "$ROOT_DIR/crates/stat-wasm-quantiles/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm-quantiles/"
-
-# Build correlation module
-echo "Building stat-wasm-correlation..."
-cd "$ROOT_DIR/crates/stat-wasm-correlation"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm-correlation"
-cp -r "$ROOT_DIR/crates/stat-wasm-correlation/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm-correlation/"
-
-# Build tests module
-echo "Building stat-wasm-tests..."
-cd "$ROOT_DIR/crates/stat-wasm-tests"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm-tests"
-cp -r "$ROOT_DIR/crates/stat-wasm-tests/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm-tests/"
-
-# Build full module (for index.ts)
-echo "Building stat-wasm (full module)..."
-cd "$ROOT_DIR/crates/stat-wasm"
-wasm-pack build --target bundler --out-dir pkg
-# Copy to package directory
-mkdir -p "$PACKAGE_DIR/pkg/stat-wasm"
-cp -r "$ROOT_DIR/crates/stat-wasm/pkg/"* "$PACKAGE_DIR/pkg/stat-wasm/"
-
-echo "✅ All WASM modules built and copied successfully!"
-
+echo "✅ All WASM modules built successfully using wasm-bindgen-lite!"

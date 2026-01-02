@@ -1,6 +1,6 @@
 {
   "name": "@addmaple/stats",
-  "version": "0.1.1",
+  "version": "0.2.4",
   "description": "High-performance statistics library built with Rust and WebAssembly",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/addmaple/stats.git"
+    "url": "git+https://github.com/addmaple/stats.git"
   },
   "exports": {
     ".": {
@@ -59,6 +59,11 @@
       "import": "./dist/tests.js",
       "require": "./dist/tests.js",
       "types": "./dist/tests.d.ts"
+    },
+    "./shared": {
+      "import": "./dist/shared.js",
+      "require": "./dist/shared.js",
+      "types": "./dist/shared.d.ts"
     }
   },
   "scripts": {
@@ -67,12 +72,17 @@
     "build:wasm:full": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build ../../crates/stat-wasm --target bundler --out-dir pkg",
     "dev": "tsc --watch",
     "test": "node --test dist/**/*.test.js",
-    "prepublishOnly": "npm run build"
+    "size:check": "node scripts/check-bundle-size.js",
+    "size:update": "node scripts/check-bundle-size.js --update-baseline",
+    "simd:analyze": "node scripts/simd-analysis.js",
+    "clean": "rm -rf dist pkg",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "esbuild": "^0.27.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "wasm-bindgen-lite": "^0.3.2"
   },
   "dependencies": {
     "wasm-feature-detect": "^1.5.0"

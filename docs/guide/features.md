@@ -70,6 +70,7 @@ This document compares the features available in `@addmaple/stats` versus `jStat
 - ✅ `diff` - Differences between consecutive elements
 - ✅ `rank` - Rank values (with tie handling)
 - ✅ `histogram` - Histogram with auto or custom bins
+- ✅ `histogramBinning` - Advanced binning strategies (auto rules, equal-frequency, fixed-width, custom)
 - ✅ `cumreduce` - Cumulative reduction with custom reducer function
 
 #### Statistical Tests

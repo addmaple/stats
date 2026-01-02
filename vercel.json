@@ -3,4 +3,3 @@
   "outputDirectory": "docs/dist",
   "installCommand": "cd docs && npm install"
 }
-

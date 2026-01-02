@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, meandev } from '@stats/core';
+import { init, meandev } from '@addmaple/stats';
 import jStat from 'jstat';
 
 // Converted from: meandev-test.js
@@ -29,25 +29,10 @@ describe('meandev - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('meandev matrix cols', async () => {
-    await init();
+  it.skip('meandev matrix cols (skipped: matrix operations not implemented)', async () => {});
 
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('meandev callback (skipped: test needs manual conversion)', async () => {});
 
-  it('meandev callback', async () => {
-    await init();
-
-    // TODO: Manual conversion needed
-    assert.ok(true, 'Test needs manual conversion');
-  });
-
-  it('meandev matrix cols callback', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('meandev matrix cols callback (skipped: matrix operations not implemented)', async () => {});
 
 });

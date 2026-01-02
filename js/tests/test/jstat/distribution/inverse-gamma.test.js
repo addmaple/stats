@@ -1,9 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
-// SKIPPED: inverse-gamma is not yet implemented in @stats/core
+// SKIPPED: inverse-gamma is not yet implemented in @addmaple/stats
 describe('inverse-gamma - jstat compatibility', () => {
-  it('not yet implemented', () => {
-    assert.ok(true, 'inverse-gamma is not yet implemented');
-  });
+  it.skip('inverse-gamma is not yet implemented', () => {});
 });

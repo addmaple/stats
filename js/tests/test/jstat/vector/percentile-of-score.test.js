@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { init, percentileOfScore } from '@stats/core';
+import { init, percentileOfScore } from '@addmaple/stats';
 import jStat from 'jstat';
 
 const tol = 0.0000001;
@@ -70,11 +70,6 @@ describe('percentileOfScore - jstat compatibility', () => {
     assert.equal(ourResult, jstatResult);
   });
 
-  it('percentile of score matrix cols', async () => {
-    await init();
-
-    // Matrix operation - not yet implemented
-    assert.ok(true, 'Matrix operations not yet implemented');
-  });
+  it.skip('percentile of score matrix cols (skipped: matrix operations not implemented)', async () => {});
 
 });
