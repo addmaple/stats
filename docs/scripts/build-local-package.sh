@@ -20,30 +20,27 @@ fi
 echo "🔨 Building local package..."
 npm install && npm run build
 
-if [ $? -eq 0 ]; then
+# Copy WASM package files to docs public directory for VitePress to serve
+echo "📦 Copying WASM files to docs public directory..."
+DOCS_DIR="../../docs"
+PUBLIC_DIR="$DOCS_DIR/public/assets"
+mkdir -p "$PUBLIC_DIR"
+
+if [ $? -eq 0 ] && [ -d "pkg" ]; then
   echo "✅ Local package built successfully"
-  
-  # Copy WASM package files to docs public directory for VitePress to serve
-  echo "📦 Copying WASM files to docs public directory..."
-  DOCS_DIR="../../docs"
-  PUBLIC_DIR="$DOCS_DIR/public/assets"
-  mkdir -p "$PUBLIC_DIR"
-  
-  # Copy all pkg directories to public/assets/pkg
-  if [ -d "pkg" ]; then
-    cp -r pkg "$PUBLIC_DIR/"
-    echo "✅ Copied WASM packages to $PUBLIC_DIR/pkg"
-  else
-    echo "⚠️  No pkg directory found after build"
-    # Fallback: try to copy from node_modules if available
-    if [ -d "node_modules/@addmaple/stats/pkg" ]; then
-      echo "📦 Copying WASM packages from node_modules..."
-      cp -r node_modules/@addmaple/stats/pkg "$PUBLIC_DIR/"
-      echo "✅ Copied WASM packages from node_modules to $PUBLIC_DIR/pkg"
-    fi
-  fi
+  # Copy from local build
+  cp -r pkg "$PUBLIC_DIR/"
+  echo "✅ Copied WASM packages to $PUBLIC_DIR/pkg"
 else
-  echo "⚠️  Local build failed - docs will use npm package"
+  echo "⚠️  Local build failed or pkg not found - using npm package"
+  # Fallback: copy from node_modules (npm package)
+  if [ -d "node_modules/@addmaple/stats/pkg" ]; then
+    echo "📦 Copying WASM packages from node_modules..."
+    cp -r node_modules/@addmaple/stats/pkg "$PUBLIC_DIR/"
+    echo "✅ Copied WASM packages from node_modules to $PUBLIC_DIR/pkg"
+  else
+    echo "⚠️  No WASM packages found in node_modules either"
+  fi
 fi
 
 exit 0  # Always succeed so npm continues
