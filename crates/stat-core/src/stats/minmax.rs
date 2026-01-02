@@ -127,8 +127,3 @@ pub fn range(data: &[f64]) -> f64 {
         max_val - min_val
     }
 }
-
-
-
-
-

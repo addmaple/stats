@@ -372,7 +372,7 @@ pub fn weighted_quantiles(data: &[f64], weights: &[f64], qs: &[f64]) -> Vec<f64>
     pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let n = pairs.len();
-    
+
     // Build cumulative weight array
     let mut cum_weights = Vec::with_capacity(n);
     let mut running = 0.0;
@@ -466,4 +466,3 @@ pub fn rank(data: &[f64]) -> Vec<f64> {
 
     ranks
 }
-

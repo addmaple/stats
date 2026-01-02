@@ -740,8 +740,7 @@ fn studentized_range_critical(alpha: f64, k: usize, df: usize) -> f64 {
     if df > 120 {
         // Asymptotic critical values for alpha=0.05
         // q_crit ≈ sqrt(2) * z_crit * adjustment_factor
-        let z_crit =
-            crate::distributions::normal_inv(1.0 - alpha / 2.0, 0.0, 1.0).unwrap_or(1.96);
+        let z_crit = crate::distributions::normal_inv(1.0 - alpha / 2.0, 0.0, 1.0).unwrap_or(1.96);
 
         // Adjustment for number of groups (empirical formula)
         let group_factor = 1.0 + 0.1 * (k_f - 2.0).max(0.0);
@@ -804,4 +803,3 @@ pub fn anova_categorical(groups: &[String], values: &[f64]) -> AnovaResult {
         df_within: total_n.saturating_sub(k),
     }
 }
-

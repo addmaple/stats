@@ -512,4 +512,3 @@ pub fn histogram_custom_with_edges(
         counts,
     }
 }
-
