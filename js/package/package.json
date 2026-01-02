@@ -74,7 +74,9 @@
     "test": "node --test dist/**/*.test.js",
     "size:check": "node scripts/check-bundle-size.js",
     "size:update": "node scripts/check-bundle-size.js --update-baseline",
-    "prepublishOnly": "npm run build"
+    "simd:analyze": "node scripts/simd-analysis.js",
+    "clean": "rm -rf dist pkg",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

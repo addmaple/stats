@@ -4,7 +4,7 @@ import wasm from 'vite-plugin-wasm'
 export default defineConfig({
   title: '@addmaple/stats',
   description: 'A faster version of jStat using Rust compiled to WebAssembly under the hood',
-  base: '/',
+  base: '/stats/',
   outDir: './dist',
   ignoreDeadLinks: false,
   

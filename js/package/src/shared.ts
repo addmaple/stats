@@ -159,9 +159,7 @@ export function setGlobalWasm(mod: any): void {
 
 export function getGlobalWasm(): any | null {
   return globalWasm;
-}
-
-/**
+}/**
  * Create a requireWasm function for a module.
  * This ensures consistent error messaging across all modules.
  */

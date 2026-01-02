@@ -1,6 +1,6 @@
-@stats/core API Reference
+@addmaple/stats API Reference
 
-# @stats/core API Reference - v0.2.3
+# @addmaple/stats API Reference - v0.2.4
 
 ## Table of contents
 
@@ -29,7 +29,6 @@
 - [TriangularParams](interfaces/TriangularParams.md)
 - [InverseGammaParams](interfaces/InverseGammaParams.md)
 - [NegativeBinomialParams](interfaces/NegativeBinomialParams.md)
-- [BaseWasmModule](interfaces/BaseWasmModule.md)
 - [ArrayResult](interfaces/ArrayResult.md)
 - [HistogramWithEdgesResult](interfaces/HistogramWithEdgesResult.md)
 - [TestResult](interfaces/TestResult.md)
@@ -50,12 +49,9 @@
 - [TestsWasmModule](interfaces/TestsWasmModule.md)
 - [FullWasmModule](interfaces/FullWasmModule.md)
 
-### Type Aliases
-
-- [ArrayKernel](index.md#arraykernel)
-
 ### Variables
 
+- [BinningPresets](index.md#binningpresets)
 - [WASM\_NOT\_INITIALIZED\_ERROR](index.md#wasm_not_initialized_error)
 
 ### Functions
@@ -89,6 +85,8 @@
 - [percentileInclusive](index.md#percentileinclusive)
 - [percentileExclusive](index.md#percentileexclusive)
 - [percentileOfScore](index.md#percentileofscore)
+- [qscore](index.md#qscore)
+- [qtest](index.md#qtest)
 - [quartiles](index.md#quartiles)
 - [iqr](index.md#iqr)
 - [percentiles](index.md#percentiles)
@@ -96,8 +94,8 @@
 - [weightedPercentile](index.md#weightedpercentile)
 - [weightedQuantiles](index.md#weightedquantiles)
 - [weightedMedian](index.md#weightedmedian)
-- [histogram](index.md#histogram)
 - [histogramEdges](index.md#histogramedges)
+- [histogramBinning](index.md#histogrambinning)
 - [f64View](index.md#f64view)
 - [f32View](index.md#f32view)
 - [copyToWasmMemory](index.md#copytowasmmemory)
@@ -105,9 +103,6 @@
 - [readWasmArray](index.md#readwasmarray)
 - [runUnaryArrayOp](index.md#rununaryarrayop)
 - [loadWasmModule](index.md#loadwasmmodule)
-- [setGlobalWasm](index.md#setglobalwasm)
-- [getGlobalWasm](index.md#getglobalwasm)
-- [createRequireWasm](index.md#createrequirewasm)
 - [sum](index.md#sum)
 - [mean](index.md#mean)
 - [variance](index.md#variance)
@@ -123,44 +118,61 @@
 - [geomean](index.md#geomean)
 - [skewness](index.md#skewness)
 - [kurtosis](index.md#kurtosis)
+- [stanMoment](index.md#stanmoment)
 - [coeffvar](index.md#coeffvar)
 - [meandev](index.md#meandev)
 - [meddev](index.md#meddev)
+- [pooledvariance](index.md#pooledvariance)
+- [pooledstdev](index.md#pooledstdev)
 - [cumsum](index.md#cumsum)
 - [cumprod](index.md#cumprod)
 - [diff](index.md#diff)
 - [rank](index.md#rank)
+- [deviation](index.md#deviation)
+- [histogram](index.md#histogram)
+- [cumreduce](index.md#cumreduce)
 - [ttest](index.md#ttest)
 - [ztest](index.md#ztest)
+- [normalci](index.md#normalci)
+- [tci](index.md#tci)
 - [regress](index.md#regress)
+- [regressNaive](index.md#regressnaive)
+- [regressSimd](index.md#regresssimd)
+- [regressWasmKernels](index.md#regresswasmkernels)
+- [anovaFScore](index.md#anovafscore)
+- [anovaTest](index.md#anovatest)
+- [chiSquareTest](index.md#chisquaretest)
+- [anovaFScoreCategorical](index.md#anovafscorecategorical)
+- [anovaTestCategorical](index.md#anovatestcategorical)
+- [tukeyHsdCategorical](index.md#tukeyhsdcategorical)
 
-## Type Aliases
+## Variables
 
-### ArrayKernel
+### BinningPresets
 
-Ƭ **ArrayKernel**: (`inputPtr`: `number`, `len`: `number`, `outputPtr`: `number`) => `void`
+• `Const` **BinningPresets**: `Object`
+
+Presets for common histogram binning strategies.
 
 #### Type declaration
 
-▸ (`inputPtr`, `len`, `outputPtr`): `void`
-
-##### Parameters
-
 | Name | Type |
 | :------ | :------ |
-| `inputPtr` | `number` |
-| `len` | `number` |
-| `outputPtr` | `number` |
-
-##### Returns
-
-`void`
+| `autoFD` | (`bins?`: `number`) => `HistogramBinningOptions` |
+| `autoScott` | (`bins?`: `number`) => `HistogramBinningOptions` |
+| `autoSqrt` | (`bins?`: `number`) => `HistogramBinningOptions` |
+| `autoWithTailCollapse` | (`k`: `number`, `bins?`: `number`) => `HistogramBinningOptions` |
+| `equalFrequency` | (`bins`: `number`) => `HistogramBinningOptions` |
+| `fixedWidth` | (`bins`: `number`) => `HistogramBinningOptions` |
+| `deciles` | () => `HistogramBinningOptions` |
+| `quartiles` | () => `HistogramBinningOptions` |
+| `custom` | (`edges`: `Float64Array` \| `number`[]) => `HistogramBinningOptions` |
 
 #### Defined in
 
-[shared.ts:82](https://github.com/addmaple/stats/blob/main/js/package/src/shared.ts#L82)
+[quantiles.ts:394](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L394)
 
-## Variables
+___
 
 ### WASM\_NOT\_INITIALIZED\_ERROR
 
@@ -266,7 +278,7 @@ An object with common descriptive statistics
 
 #### Defined in
 
-descriptive.ts:14
+[descriptive.ts:14](https://github.com/addmaple/stats/blob/main/js/package/src/descriptive.ts#L14)
 
 ___
 
@@ -690,7 +702,7 @@ It's safe to call multiple times - it will only initialize once.
 
 #### Defined in
 
-[index.ts:43](https://github.com/addmaple/stats/blob/main/js/package/src/index.ts#L43)
+[index.ts:54](https://github.com/addmaple/stats/blob/main/js/package/src/index.ts#L54)
 
 ___
 
@@ -702,11 +714,11 @@ Calculate a percentile of an array.
 
 #### Parameters
 
-| Name | Type | Default value |
-| :------ | :------ | :------ |
-| `data` | `ArrayLike`\<`number`\> | `undefined` |
-| `k` | `number` | `undefined` |
-| `exclusive` | `boolean` | `false` |
+| Name | Type | Default value | Description |
+| :------ | :------ | :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> | `undefined` | Sorted or unsorted array |
+| `k` | `number` | `undefined` | Percentile (0 to 1) |
+| `exclusive` | `boolean` | `false` | If true, use exclusive percentile calculation |
 
 #### Returns
 
@@ -714,7 +726,7 @@ Calculate a percentile of an array.
 
 #### Defined in
 
-[quantiles.ts:42](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L42)
+[quantiles.ts:58](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L58)
 
 ___
 
@@ -722,8 +734,6 @@ ___
 
 ▸ **percentileInclusive**(`data`, `k`): `number`
 
-Calculate an inclusive percentile (match Excel's PERCENTILE.INC).
-
 #### Parameters
 
 | Name | Type |
@@ -737,7 +747,7 @@ Calculate an inclusive percentile (match Excel's PERCENTILE.INC).
 
 #### Defined in
 
-[quantiles.ts:59](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L59)
+[quantiles.ts:72](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L72)
 
 ___
 
@@ -745,8 +755,6 @@ ___
 
 ▸ **percentileExclusive**(`data`, `k`): `number`
 
-Calculate an exclusive percentile (match Excel's PERCENTILE.EXC).
-
 #### Parameters
 
 | Name | Type |
@@ -760,7 +768,7 @@ Calculate an exclusive percentile (match Excel's PERCENTILE.EXC).
 
 #### Defined in
 
-[quantiles.ts:76](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L76)
+[quantiles.ts:86](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L86)
 
 ___
 
@@ -768,7 +776,7 @@ ___
 
 ▸ **percentileOfScore**(`data`, `score`, `strict?`): `number`
 
-Calculate the percentile of a specific score in a dataset.
+Calculate the percentile rank of a score.
 
 #### Parameters
 
@@ -784,7 +792,56 @@ Calculate the percentile of a specific score in a dataset.
 
 #### Defined in
 
-[quantiles.ts:93](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L93)
+[quantiles.ts:103](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L103)
+
+___
+
+### qscore
+
+▸ **qscore**(`data`, `score`, `strict?`): `number`
+
+Calculate the Q-score (quantile score) of a value.
+
+#### Parameters
+
+| Name | Type | Default value |
+| :------ | :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> | `undefined` |
+| `score` | `number` | `undefined` |
+| `strict` | `boolean` | `false` |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[quantiles.ts:120](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L120)
+
+___
+
+### qtest
+
+▸ **qtest**(`data`, `score`, `qLower`, `qUpper`): `boolean`
+
+Perform a quantile test.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> |
+| `score` | `number` |
+| `qLower` | `number` |
+| `qUpper` | `number` |
+
+#### Returns
+
+`boolean`
+
+#### Defined in
+
+[quantiles.ts:127](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L127)
 
 ___
 
@@ -792,7 +849,7 @@ ___
 
 ▸ **quartiles**(`data`): [`number`, `number`, `number`]
 
-Calculate the quartiles (Q1, Q2, Q3) of an array.
+Calculate quartiles (Q1, Q2, Q3).
 
 #### Parameters
 
@@ -806,7 +863,7 @@ Calculate the quartiles (Q1, Q2, Q3) of an array.
 
 #### Defined in
 
-[quantiles.ts:110](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L110)
+[quantiles.ts:144](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L144)
 
 ___
 
@@ -814,7 +871,7 @@ ___
 
 ▸ **iqr**(`data`): `number`
 
-Calculate the interquartile range (IQR).
+Calculate interquartile range (IQR).
 
 #### Parameters
 
@@ -828,7 +885,7 @@ Calculate the interquartile range (IQR).
 
 #### Defined in
 
-[quantiles.ts:127](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L127)
+[quantiles.ts:161](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L161)
 
 ___
 
@@ -851,13 +908,13 @@ Calculate multiple percentiles at once.
 
 #### Defined in
 
-[quantiles.ts:144](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L144)
+[quantiles.ts:178](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L178)
 
 ___
 
 ### quantiles
 
-▸ **quantiles**(`data`, `quantilesArr`): `Float64Array`
+▸ **quantiles**(`data`, `qs`): `Float64Array`
 
 Calculate multiple quantiles at once.
 
@@ -866,7 +923,7 @@ Calculate multiple quantiles at once.
 | Name | Type |
 | :------ | :------ |
 | `data` | `ArrayLike`\<`number`\> |
-| `quantilesArr` | `ArrayLike`\<`number`\> |
+| `qs` | `ArrayLike`\<`number`\> |
 
 #### Returns
 
@@ -874,7 +931,7 @@ Calculate multiple quantiles at once.
 
 #### Defined in
 
-[quantiles.ts:154](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L154)
+[quantiles.ts:185](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L185)
 
 ___
 
@@ -898,7 +955,7 @@ Calculate a weighted percentile.
 
 #### Defined in
 
-[quantiles.ts:178](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L178)
+[quantiles.ts:211](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L211)
 
 ___
 
@@ -922,7 +979,7 @@ Calculate multiple weighted quantiles at once.
 
 #### Defined in
 
-[quantiles.ts:212](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L212)
+[quantiles.ts:233](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L233)
 
 ___
 
@@ -945,30 +1002,7 @@ Calculate the weighted median.
 
 #### Defined in
 
-[quantiles.ts:254](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L254)
-
-___
-
-### histogram
-
-▸ **histogram**(`data`, `binCount`): `Float64Array`
-
-Calculate a histogram with automatic bin width.
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `data` | `ArrayLike`\<`number`\> |
-| `binCount` | `number` |
-
-#### Returns
-
-`Float64Array`
-
-#### Defined in
-
-[quantiles.ts:286](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L286)
+[quantiles.ts:263](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L263)
 
 ___
 
@@ -991,7 +1025,30 @@ Calculate a histogram with specified bin edges.
 
 #### Defined in
 
-[quantiles.ts:305](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L305)
+[quantiles.ts:304](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L304)
+
+___
+
+### histogramBinning
+
+▸ **histogramBinning**(`data`, `options`): `HistogramBinningResult`
+
+Advanced histogram binning function.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> |
+| `options` | `number` \| `HistogramBinningOptions` |
+
+#### Returns
+
+`HistogramBinningResult`
+
+#### Defined in
+
+[quantiles.ts:341](https://github.com/addmaple/stats/blob/main/js/package/src/quantiles.ts#L341)
 
 ___
 
@@ -1126,8 +1183,8 @@ Run a unary array operation using a WASM kernel.
 | Name | Type |
 | :------ | :------ |
 | `data` | `ArrayLike`\<`number`\> |
-| `kernel` | [`ArrayKernel`](index.md#arraykernel) |
-| `wasm` | [`BaseWasmModule`](interfaces/BaseWasmModule.md) |
+| `kernel` | `ArrayKernel` |
+| `wasm` | `BaseWasmModule` |
 | `memory` | `Memory` |
 
 #### Returns
@@ -1163,75 +1220,6 @@ Load a WASM module using wasm-bindgen-lite loaders.
 
 ___
 
-### setGlobalWasm
-
-▸ **setGlobalWasm**(`mod`): `void`
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `mod` | `any` |
-
-#### Returns
-
-`void`
-
-#### Defined in
-
-[shared.ts:156](https://github.com/addmaple/stats/blob/main/js/package/src/shared.ts#L156)
-
-___
-
-### getGlobalWasm
-
-▸ **getGlobalWasm**(): `any` \| ``null``
-
-#### Returns
-
-`any` \| ``null``
-
-#### Defined in
-
-[shared.ts:160](https://github.com/addmaple/stats/blob/main/js/package/src/shared.ts#L160)
-
-___
-
-### createRequireWasm
-
-▸ **createRequireWasm**\<`T`\>(`getModule`): () => `T`
-
-Create a requireWasm function for a module.
-This ensures consistent error messaging across all modules.
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `T` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `getModule` | () => `T` |
-
-#### Returns
-
-`fn`
-
-▸ (): `T`
-
-##### Returns
-
-`T`
-
-#### Defined in
-
-[shared.ts:168](https://github.com/addmaple/stats/blob/main/js/package/src/shared.ts#L168)
-
-___
-
 ### sum
 
 ▸ **sum**(`data`): `number`
@@ -1252,7 +1240,7 @@ The sum of all elements
 
 #### Defined in
 
-[stats.ts:56](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L56)
+[stats.ts:78](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L78)
 
 ___
 
@@ -1276,7 +1264,7 @@ The mean value, or NaN if array is empty
 
 #### Defined in
 
-[stats.ts:81](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L81)
+[stats.ts:88](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L88)
 
 ___
 
@@ -1298,7 +1286,7 @@ Calculate the population variance of an array.
 
 #### Defined in
 
-[stats.ts:102](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L102)
+[stats.ts:95](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L95)
 
 ___
 
@@ -1320,7 +1308,7 @@ Calculate the sample variance of an array (Bessel's correction).
 
 #### Defined in
 
-[stats.ts:123](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L123)
+[stats.ts:102](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L102)
 
 ___
 
@@ -1342,7 +1330,7 @@ Calculate the standard deviation (population) of an array.
 
 #### Defined in
 
-[stats.ts:144](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L144)
+[stats.ts:111](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L111)
 
 ___
 
@@ -1364,7 +1352,7 @@ Calculate the sample standard deviation of an array.
 
 #### Defined in
 
-[stats.ts:165](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L165)
+[stats.ts:118](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L118)
 
 ___
 
@@ -1386,7 +1374,7 @@ Calculate the minimum value in an array.
 
 #### Defined in
 
-[stats.ts:186](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L186)
+[stats.ts:127](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L127)
 
 ___
 
@@ -1408,7 +1396,7 @@ Calculate the maximum value in an array.
 
 #### Defined in
 
-[stats.ts:202](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L202)
+[stats.ts:134](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L134)
 
 ___
 
@@ -1430,7 +1418,7 @@ Calculate the product of all elements in an array.
 
 #### Defined in
 
-[stats.ts:218](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L218)
+[stats.ts:141](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L141)
 
 ___
 
@@ -1452,7 +1440,7 @@ Calculate the range (max - min) of an array.
 
 #### Defined in
 
-[stats.ts:234](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L234)
+[stats.ts:148](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L148)
 
 ___
 
@@ -1474,7 +1462,7 @@ Calculate the median of an array.
 
 #### Defined in
 
-[stats.ts:250](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L250)
+[stats.ts:155](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L155)
 
 ___
 
@@ -1496,7 +1484,7 @@ Calculate the mode of an array.
 
 #### Defined in
 
-[stats.ts:266](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L266)
+[stats.ts:162](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L162)
 
 ___
 
@@ -1518,7 +1506,7 @@ Calculate the geometric mean of an array.
 
 #### Defined in
 
-[stats.ts:282](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L282)
+[stats.ts:169](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L169)
 
 ___
 
@@ -1540,7 +1528,7 @@ Calculate the skewness of an array.
 
 #### Defined in
 
-[stats.ts:298](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L298)
+[stats.ts:176](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L176)
 
 ___
 
@@ -1562,7 +1550,30 @@ Calculate the kurtosis of an array.
 
 #### Defined in
 
-[stats.ts:314](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L314)
+[stats.ts:183](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L183)
+
+___
+
+### stanMoment
+
+▸ **stanMoment**(`data`, `k`): `number`
+
+Calculate the k-th standardized moment.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> |
+| `k` | `number` |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[stats.ts:190](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L190)
 
 ___
 
@@ -1584,7 +1595,7 @@ Calculate the coefficient of variation.
 
 #### Defined in
 
-[stats.ts:330](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L330)
+[stats.ts:197](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L197)
 
 ___
 
@@ -1606,7 +1617,7 @@ Calculate the mean absolute deviation.
 
 #### Defined in
 
-[stats.ts:346](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L346)
+[stats.ts:204](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L204)
 
 ___
 
@@ -1628,7 +1639,53 @@ Calculate the median absolute deviation.
 
 #### Defined in
 
-[stats.ts:362](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L362)
+[stats.ts:211](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L211)
+
+___
+
+### pooledvariance
+
+▸ **pooledvariance**(`data1`, `data2`): `number`
+
+Calculate the pooled variance of two arrays.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data1` | `ArrayLike`\<`number`\> |
+| `data2` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[stats.ts:218](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L218)
+
+___
+
+### pooledstdev
+
+▸ **pooledstdev**(`data1`, `data2`): `number`
+
+Calculate the pooled standard deviation of two arrays.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data1` | `ArrayLike`\<`number`\> |
+| `data2` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[stats.ts:240](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L240)
 
 ___
 
@@ -1650,7 +1707,7 @@ Calculate the cumulative sum.
 
 #### Defined in
 
-[stats.ts:378](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L378)
+[stats.ts:262](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L262)
 
 ___
 
@@ -1672,7 +1729,7 @@ Calculate the cumulative product.
 
 #### Defined in
 
-[stats.ts:396](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L396)
+[stats.ts:279](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L279)
 
 ___
 
@@ -1694,7 +1751,7 @@ Calculate the difference between consecutive elements.
 
 #### Defined in
 
-[stats.ts:414](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L414)
+[stats.ts:296](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L296)
 
 ___
 
@@ -1716,7 +1773,78 @@ Calculate the rank of each element.
 
 #### Defined in
 
-[stats.ts:432](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L432)
+[stats.ts:313](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L313)
+
+___
+
+### deviation
+
+▸ **deviation**(`data`): `Float64Array`
+
+Calculate the deviation from the mean for each element.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+`Float64Array`
+
+#### Defined in
+
+[stats.ts:330](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L330)
+
+___
+
+### histogram
+
+▸ **histogram**(`data`, `binCount?`): `Float64Array`
+
+Calculate a histogram with specified number of bins.
+
+#### Parameters
+
+| Name | Type | Default value |
+| :------ | :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> | `undefined` |
+| `binCount` | `number` | `4` |
+
+#### Returns
+
+`Float64Array`
+
+#### Defined in
+
+[stats.ts:347](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L347)
+
+___
+
+### cumreduce
+
+▸ **cumreduce**(`data`, `initialValue`, `reducer`): `Float64Array`
+
+Cumulative reduction using a custom reducer function.
+
+Note: This is implemented in JS to allow custom reducers.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `ArrayLike`\<`number`\> |
+| `initialValue` | `number` |
+| `reducer` | (`acc`: `number`, `val`: `number`) => `number` |
+
+#### Returns
+
+`Float64Array`
+
+#### Defined in
+
+[stats.ts:366](https://github.com/addmaple/stats/blob/main/js/package/src/stats.ts#L366)
 
 ___
 
@@ -1739,7 +1867,7 @@ Perform a one-sample t-test.
 
 #### Defined in
 
-[tests.ts:50](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L50)
+[tests.ts:54](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L54)
 
 ___
 
@@ -1763,7 +1891,56 @@ Perform a one-sample Z-test.
 
 #### Defined in
 
-[tests.ts:71](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L71)
+[tests.ts:75](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L75)
+
+___
+
+### normalci
+
+▸ **normalci**(`alpha`, `mean`, `se`): `number`[]
+
+Calculate a confidence interval for a normal distribution.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `alpha` | `number` |
+| `mean` | `number` |
+| `se` | `number` |
+
+#### Returns
+
+`number`[]
+
+#### Defined in
+
+[tests.ts:96](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L96)
+
+___
+
+### tci
+
+▸ **tci**(`alpha`, `mean`, `stdev`, `n`): `number`[]
+
+Calculate a confidence interval for a Student's t-distribution.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `alpha` | `number` |
+| `mean` | `number` |
+| `stdev` | `number` |
+| `n` | `number` |
+
+#### Returns
+
+`number`[]
+
+#### Defined in
+
+[tests.ts:105](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L105)
 
 ___
 
@@ -1786,4 +1963,212 @@ Perform simple linear regression.
 
 #### Defined in
 
-[tests.ts:92](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L92)
+[tests.ts:114](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L114)
+
+___
+
+### regressNaive
+
+▸ **regressNaive**(`x`, `y`): [`RegressionResult`](interfaces/RegressionResult.md)
+
+Perform regression using the naive implementation.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `x` | `ArrayLike`\<`number`\> |
+| `y` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+[`RegressionResult`](interfaces/RegressionResult.md)
+
+#### Defined in
+
+[tests.ts:149](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L149)
+
+___
+
+### regressSimd
+
+▸ **regressSimd**(`x`, `y`): [`RegressionResult`](interfaces/RegressionResult.md)
+
+Perform regression using the SIMD implementation.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `x` | `ArrayLike`\<`number`\> |
+| `y` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+[`RegressionResult`](interfaces/RegressionResult.md)
+
+#### Defined in
+
+[tests.ts:172](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L172)
+
+___
+
+### regressWasmKernels
+
+▸ **regressWasmKernels**(`x`, `y`): [`RegressionResult`](interfaces/RegressionResult.md)
+
+Perform regression using WASM kernels.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `x` | `ArrayLike`\<`number`\> |
+| `y` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+[`RegressionResult`](interfaces/RegressionResult.md)
+
+#### Defined in
+
+[tests.ts:195](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L195)
+
+___
+
+### anovaFScore
+
+▸ **anovaFScore**(`groups`): `number`
+
+Perform one-way ANOVA and return the F-score.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `groups` | `ArrayLike`\<`number`\>[] |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[tests.ts:298](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L298)
+
+___
+
+### anovaTest
+
+▸ **anovaTest**(`groups`): [`AnovaResult`](interfaces/AnovaResult.md)
+
+Perform one-way ANOVA and return full results.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `groups` | `ArrayLike`\<`number`\>[] |
+
+#### Returns
+
+[`AnovaResult`](interfaces/AnovaResult.md)
+
+#### Defined in
+
+[tests.ts:331](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L331)
+
+___
+
+### chiSquareTest
+
+▸ **chiSquareTest**(`cat1`, `cat2`, `options?`): [`ChiSquareResult`](interfaces/ChiSquareResult.md)
+
+Perform Chi-Square test of independence.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `cat1` | `string`[] |
+| `cat2` | `string`[] |
+| `options` | `Object` |
+| `options.cardinality1?` | `number` |
+| `options.cardinality2?` | `number` |
+
+#### Returns
+
+[`ChiSquareResult`](interfaces/ChiSquareResult.md)
+
+#### Defined in
+
+[tests.ts:390](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L390)
+
+___
+
+### anovaFScoreCategorical
+
+▸ **anovaFScoreCategorical**(`groups`, `values`): `number`
+
+Perform ANOVA with categorical labels.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `groups` | `string`[] |
+| `values` | `number`[] |
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[tests.ts:426](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L426)
+
+___
+
+### anovaTestCategorical
+
+▸ **anovaTestCategorical**(`groups`, `values`): [`AnovaResult`](interfaces/AnovaResult.md)
+
+Perform full ANOVA test with categorical labels.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `groups` | `string`[] |
+| `values` | `number`[] |
+
+#### Returns
+
+[`AnovaResult`](interfaces/AnovaResult.md)
+
+#### Defined in
+
+[tests.ts:445](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L445)
+
+___
+
+### tukeyHsdCategorical
+
+▸ **tukeyHsdCategorical**(`groups`, `values`): [`TukeyHsdResult`](interfaces/TukeyHsdResult.md)
+
+Perform Tukey HSD test with categorical labels.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `groups` | `string`[] |
+| `values` | `number`[] |
+
+#### Returns
+
+[`TukeyHsdResult`](interfaces/TukeyHsdResult.md)
+
+#### Defined in
+
+[tests.ts:471](https://github.com/addmaple/stats/blob/main/js/package/src/tests.ts#L471)
