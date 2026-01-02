@@ -6,10 +6,19 @@
     "baseline": true,
     "simd": true
   },
+  "wasmOpt": {
+    "mode": "on",
+    "args": [
+      "-O3"
+    ]
+  },
   "js": {
-    "emit": ["node", "browser", "inline"],
+    "emit": [
+      "node",
+      "browser",
+      "inline"
+    ],
     "custom": "src/wrapper.js"
   },
   "exports": []
 }
-

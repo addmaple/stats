@@ -7,10 +7,19 @@
     "simd": true
   },
   "js": {
-    "emit": ["node", "browser", "inline", "inline"],
+    "emit": [
+      "node",
+      "browser",
+      "inline",
+      "inline"
+    ],
     "custom": "src/wrapper.js"
   },
-  "exports": []
+  "exports": [],
+  "wasmOpt": {
+    "mode": "on",
+    "args": [
+      "-O3"
+    ]
+  }
 }
-
-
