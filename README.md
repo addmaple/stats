@@ -111,12 +111,6 @@ npm install
 npm run dev
 ```
 
-## Installation
-
-```bash
-npm install @addmaple/stats
-```
-
 ## Project Structure
 
 ```
@@ -136,4 +130,12 @@ npm install @addmaple/stats
 ├─ docs/              # Documentation site (VitePress)
 └─ tools/             # Build scripts
 ```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
