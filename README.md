@@ -2,6 +2,8 @@
 
 A high-performance statistics library built with Rust and WebAssembly, designed to be a modern, fast alternative to jStat.
 
+📚 **[📖 View Full Documentation →](https://addmaple.github.io/stats/)** - Interactive examples, guides, and complete API reference
+
 ## Architecture
 
 - **Pure Rust core** (`stat-core`) - No WebAssembly-specific code
@@ -85,13 +87,15 @@ const s = stdev(data);
 
 ## Documentation
 
-📚 **[View Full Documentation](docs/)** - Comprehensive guides, examples, and API reference
+📚 **[View Full Documentation →](https://addmaple.github.io/stats/)** - Comprehensive guides, examples, and API reference
 
 The documentation includes:
 - **Getting Started Guide** - Installation and quick start
-- **Examples** - Multiple examples for each feature category
+- **Interactive Examples** - Try out functions directly in your browser
 - **API Reference** - Auto-generated from TypeScript source
 - **Performance Guide** - Optimization tips and benchmarks
+
+> 💡 **Tip**: The documentation site includes interactive code examples you can run directly in your browser!
 
 ### Local Development
 
