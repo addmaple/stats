@@ -11,7 +11,9 @@
     "coverage": "npm run coverage:v8",
     "coverage:core": "npm run coverage:v8:core",
     "coverage:v8": "node scripts/coverage-v8.js \"test/**/*.test.js\"",
-    "coverage:v8:core": "node scripts/coverage-v8.js \"test/core/**/*.test.js\""
+    "coverage:v8:core": "node scripts/coverage-v8.js \"test/core/**/*.test.js\"",
+    "test:glassdoor": "node scripts/run-queries.mjs glassdoor",
+    "test:walmart": "node scripts/run-queries.mjs walmart"
   },
   "dependencies": {
     "@addmaple/stats": "file:../package",

@@ -1,0 +1,180 @@
+{
+  "dataset": "glassdoor-reviews.csv",
+  "queries": [
+    {
+      "id": "overall-mean-rating",
+      "description": "What is the average overall rating?",
+      "operation": "mean",
+      "column": "rating",
+      "expected": 3.986364,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "overall-median-rating",
+      "description": "What is the median overall rating?",
+      "operation": "median",
+      "column": "rating",
+      "expected": 4.0,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "overall-stdev-rating",
+      "description": "What is the standard deviation of ratings?",
+      "operation": "stdev",
+      "column": "rating",
+      "expected": 1.077014,
+      "tolerance": 0.002
+    },
+    {
+      "id": "rating-count",
+      "description": "How many reviews are in the dataset?",
+      "operation": "count",
+      "column": "rating",
+      "expected": 1100,
+      "tolerance": 0
+    },
+    {
+      "id": "mean-rating-comcast",
+      "description": "What is the average rating for Comcast?",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "company": "Comcast"
+      },
+      "expected": 3.94,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "count-comcast",
+      "description": "How many Comcast reviews are there?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "company": "Comcast"
+      },
+      "expected": 200,
+      "tolerance": 0
+    },
+    {
+      "id": "mean-rating-fedex",
+      "description": "What is the average rating for FedEx?",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "company": "FedEx"
+      },
+      "expected": 3.89,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "count-fedex",
+      "description": "How many FedEx reviews are there?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "company": "FedEx"
+      },
+      "expected": 200,
+      "tolerance": 0
+    },
+    {
+      "id": "mean-rating-walmart",
+      "description": "What is the average rating for Walmart?",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "company": "Walmart"
+      },
+      "expected": 3.938,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "count-walmart",
+      "description": "How many Walmart reviews are there?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "company": "Walmart"
+      },
+      "expected": 500,
+      "tolerance": 0
+    },
+    {
+      "id": "mean-rating-wells-fargo",
+      "description": "What is the average rating for Wells Fargo?",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "company": "Wells Fargo"
+      },
+      "expected": 4.25,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "count-wells-fargo",
+      "description": "How many Wells Fargo reviews are there?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "company": "Wells Fargo"
+      },
+      "expected": 200,
+      "tolerance": 0
+    },
+    {
+      "id": "mean-rating-current-employees",
+      "description": "Average rating from current employees",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "employee_type_prefix": "Current"
+      },
+      "expected": 4.129485,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "mean-rating-former-employees",
+      "description": "Average rating from former employees",
+      "operation": "mean",
+      "column": "rating",
+      "filter": {
+        "employee_type_prefix": "Former"
+      },
+      "expected": 3.786492,
+      "tolerance": 1e-06
+    },
+    {
+      "id": "count-high-ratings",
+      "description": "How many reviews have rating >= 4?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "rating_gte": 4
+      },
+      "expected": 824,
+      "tolerance": 0
+    },
+    {
+      "id": "count-low-ratings",
+      "description": "How many reviews have rating <= 2?",
+      "operation": "count",
+      "column": "rating",
+      "filter": {
+        "rating_lte": 2
+      },
+      "expected": 129,
+      "tolerance": 0
+    },
+    {
+      "id": "rating-75th-percentile",
+      "description": "What is the 75th percentile rating?",
+      "operation": "percentile",
+      "column": "rating",
+      "params": {
+        "p": 0.75
+      },
+      "expected": 5.0,
+      "tolerance": 1e-06
+    }
+  ]
+}
